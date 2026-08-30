@@ -1,12 +1,20 @@
 # Especificação Léxica
 
-Documento que define as regras formais do analisador léxico (lexer) da linguagem DSL para dispositivos embarcados.
+Documento que define as regras formais do analisador léxico (lexer) da linguagem DSL para dispositivos embarcados baseados em ESP32.
+
+Este é o primeiro estágio do pipeline de compilação:
+
+```
+DSL (.dsl) → Lexer → Tokens → Parser → AST → Semântica → C++/Arduino → ESP32
+             ^^^^^
+             (este documento)
+```
 
 ---
 
 ## 1. Visão Geral
 
-O analisador léxico é a primeira fase do compilador. Ele recebe o **código-fonte** como uma sequência de caracteres e produz uma **sequência de tokens**, onde cada token é um par `<tipo, valor>`.
+O analisador léxico é a primeira fase do compilador. Ele recebe o **código-fonte** (escrito na DSL) como uma sequência de caracteres e produz uma **sequência de tokens**, onde cada token é um par `<tipo, valor>`.
 
 ```
 Código-fonte (caracteres) → Lexer → Sequência de tokens
