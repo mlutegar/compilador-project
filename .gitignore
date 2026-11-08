@@ -40,3 +40,6 @@ package-lock.json
 *.swo
 .DS_Store
 Thumbs.db
+
+# Playground web: o lock do front deve ser versionado (npm ci no Docker)
+!web/app/package-lock.json

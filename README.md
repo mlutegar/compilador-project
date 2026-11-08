@@ -181,6 +181,36 @@ Fases documentadas em [`docs/analise-sintatica-ast.md`](docs/analise-sintatica-a
 
 ---
 
+## 🌐 Playground web
+
+Editor online do Tupã (CodeMirror 6 + React) com abas de **Tokens**, **AST**, **Erros** (clique leva à linha e sublinha o trecho), **C++ gerado** (copiar / baixar `.ino`) e **Métricas** (linhas Tupã vs C++, valores reais medidos na compilação). Atalho: `Ctrl+Enter` compila.
+
+- **Backend:** FastAPI em `web/api/`, importa o pacote `compilador` (sem duplicar lógica). Não executa `arduino-cli`.
+  - `POST /api/compilar` `{codigo}` → `{tokens, ast, erros, cpp, metricas}` (limite 20 KB, timeout 5 s)
+  - `GET /api/exemplos`, `GET /api/linguagem` (palavras-chave do lexer), `GET /api/saude`
+- **Frontend:** Vite + React em `web/app/`; o build estático (`web/app/dist`) é servido pelo próprio FastAPI.
+
+**Com Docker** (mesma imagem do deploy):
+
+```bash
+docker compose up --build        # http://127.0.0.1:8000
+```
+
+O serviço `tupa` escuta só em `127.0.0.1:8000` (publicar via proxy reverso no VPS), roda como usuário não root e tem healthcheck em `/api/saude`.
+
+**Desenvolvimento local:**
+
+```bash
+pip install -r requirements-web.txt
+uvicorn web.api.main:app --reload            # API em :8000
+cd web/app && npm install && npm run dev     # front em :5173 (proxy /api -> :8000)
+python -m pytest tests -q                    # inclui tests/test_web_api.py
+```
+
+Variáveis opcionais: `TUPA_LIMITE_BYTES`, `TUPA_TIMEOUT_S`, `TUPA_EXEMPLOS_DIR`, `TUPA_STATIC_DIR`.
+
+---
+
 ## 🛠️ Tecnologias
 
 | Componente | Tecnologia |
