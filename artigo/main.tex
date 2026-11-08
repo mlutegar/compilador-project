@@ -1,0 +1,432 @@
+\documentclass[conference]{IEEEtran}
+% \IEEEoverridecommandlockouts % só necessário se houver \thanks de financiamento
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+graphicspath{{figuras/}}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage{url}
+
+% ---------------------------------------------------------------
+% Destaque de sintaxe para a linguagem Tupã
+% ---------------------------------------------------------------
+\lstdefinelanguage{Tupa}{
+  morekeywords={dispositivo,ao,se,senao,inteiro,verdadeiro,falso,botao},
+  morekeywords=[2]{nfc,led,ir,esperar},
+  sensitive=true,
+  morecomment=[l]{\#},
+  morestring=[b]",
+}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\bfseries\color{orange!80!black},
+  keywordstyle=[2]\color{teal!70!black},
+  commentstyle=\itshape\color{gray},
+  stringstyle=\color{red!60!black},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=6pt,
+  frame=single,
+  rulecolor=\color{gray!40},
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=4,
+  xleftmargin=1.5em,
+  framexleftmargin=1.5em,
+  captionpos=b,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+           {ã}{{\~a}}1 {õ}{{\~o}}1 {ç}{{\c{c}}}1 {â}{{\^a}}1 {ê}{{\^e}}1
+}
+\renewcommand{\lstlistingname}{Listagem}
+
+\begin{document}
+
+% ---------------------------------------------------------------
+% Título (sem símbolos, caracteres especiais ou notas de rodapé)
+% ---------------------------------------------------------------
+\title{Tupã: Uma Linguagem de Domínio Específico em Português para Programação de Microcontroladores ESP32}
+
+\author{
+\IEEEauthorblockN{Michel Lutegar}
+\IEEEauthorblockA{\textit{Engenharia de Computação} \\
+\textit{IBMEC}\\
+Rio de Janeiro, Brasil \\
+email@aluno.ibmec.edu.br} % TODO: e-mail
+\and
+\IEEEauthorblockN{André Costa}
+\IEEEauthorblockA{\textit{Engenharia de Computação} \\
+\textit{IBMEC}\\
+Rio de Janeiro, Brasil \\
+email@aluno.ibmec.edu.br} % TODO: e-mail
+\and
+\IEEEauthorblockN{Felipe Dutrain} 
+\IEEEauthorblockA{\textit{Engenharia de Computação} \\
+\textit{IBMEC}\\
+Rio de Janeiro, Brasil \\
+202402011359@alunos.ibmec.edu.br}
+\and
+\IEEEauthorblockN{Guilherme Lopes}
+\IEEEauthorblockA{\textit{Engenharia de Computação} \\
+\textit{IBMEC}\\
+Rio de Janeiro, Brasil \\
+202401632473@aluno.ibmec.edu.br} % TODO: e-mail
+}
+
+\maketitle
+
+% ---------------------------------------------------------------
+% Resumo (sem símbolos, matemática ou notas de rodapé)
+% ---------------------------------------------------------------
+\begin{abstract}
+Programar microcontroladores ainda exige domínio de C++, de bibliotecas
+específicas e da configuração manual de pinos, o que representa uma barreira
+significativa para iniciantes, estudantes e entusiastas de eletrônica. Este
+artigo apresenta o Tupã, uma linguagem de domínio específico com sintaxe em
+português e eventos de hardware como construções de primeira classe, voltada
+para a placa ESP32. O compilador, implementado em Python, percorre as quatro
+fases clássicas de compilação, análise léxica, análise sintática, análise
+semântica e geração de código, e produz um programa Arduino em C++ que é
+compilado e gravado na placa por meio da Arduino CLI. A análise semântica
+verifica o uso correto dos módulos de hardware antes da gravação e emite
+mensagens de erro didáticas em português. Em um exemplo de controle de acesso
+por cartão NFC, um programa de 12 linhas em Tupã gera cerca de 75 linhas de
+C++ válido, sem que o usuário precise escrever inclusões de bibliotecas,
+definições de pinos ou as funções de configuração e laço principal. O projeto
+encontra-se em desenvolvimento, com as quatro fases do compilador
+implementadas e a integração com o hardware em andamento.
+\end{abstract}
+
+\begin{IEEEkeywords}
+compiladores, linguagem de domínio específico, sistemas embarcados, ESP32,
+Arduino, ensino de programação
+\end{IEEEkeywords}
+
+% ===============================================================
+\section{Introdução}
+% ===============================================================
+A popularização de placas de baixo custo, como Arduino e ESP32, aproximou
+estudantes e entusiastas do desenvolvimento de sistemas embarcados. Ainda
+assim, o caminho entre a ideia e o hardware funcionando costuma ser longo:
+mesmo uma aplicação simples, como acender um LED quando um cartão válido é
+aproximado de um leitor, exige incluir bibliotecas, definir pinos,
+inicializar periféricos e organizar o código nas funções \texttt{setup()} e
+\texttt{loop()} do ambiente Arduino. Para quem não domina C++, a configuração
+do hardware frequentemente consome mais tempo do que a lógica da aplicação.
+
+Somam-se a isso a barreira do idioma, já que palavras-chave, bibliotecas e
+documentação estão majoritariamente em inglês, e o fato de que ferramentas
+educacionais existentes ou dependem de hardware fechado, ou trabalham com
+blocos visuais que não evoluem para uma linguagem textual.
+
+Este trabalho propõe o \textit{Tupã}, uma linguagem de domínio específico
+(DSL, do inglês \textit{domain-specific language}) com sintaxe em português,
+cujo compilador traduz programas de alto nível para C++ compatível com o
+ecossistema Arduino e executável no ESP32. A premissa central é que o usuário
+descreva \emph{o que} o dispositivo deve fazer, e não \emph{como} o hardware
+deve ser configurado, delegando ao compilador o trabalho de baixo nível.
+
+As principais contribuições são:
+\begin{itemize}
+\item o projeto de uma linguagem textual em português com eventos de
+hardware de primeira classe, como \texttt{ao botao(1) \{ \ldots\ \}};
+\item um compilador completo, implementado em Python, que percorre as fases
+de análise léxica, sintática e semântica e de geração de código;
+\item uma análise semântica orientada ao hardware, que detecta erros antes
+da gravação na placa e produz mensagens didáticas em português;
+\item uma avaliação preliminar que compara o código escrito em Tupã com o
+código C++ equivalente gerado.
+\end{itemize}
+
+O restante do artigo está organizado da seguinte forma: a Seção~\ref{sec:relacionados}
+discute trabalhos relacionados; a Seção~\ref{sec:linguagem} descreve a
+linguagem; a Seção~\ref{sec:compilador} detalha a arquitetura do compilador;
+a Seção~\ref{sec:resultados} apresenta resultados preliminares; e a
+Seção~\ref{sec:conclusao} conclui e aponta trabalhos futuros.
+
+% ===============================================================
+\section{Trabalhos Relacionados}\label{sec:relacionados}
+% ===============================================================
+O \textit{Arduino IDE} \cite{arduino} consolidou-se como a principal porta de
+entrada para a programação de microcontroladores. Sua linguagem, um
+subconjunto de C++ acompanhado de bibliotecas, é poderosa e madura, mas exige
+do usuário conhecimento de C++, do mapeamento de pinos e das APIs de cada
+periférico.
+
+O \textit{Microsoft MakeCode} \cite{makecode} e o \textit{Blockly}
+\cite{blockly} oferecem ambientes de programação por blocos voltados ao
+ensino. Embora reduzam a barreira inicial, não geram código Arduino nativo
+e não oferecem ao estudante uma linguagem textual real para a qual ele possa
+migrar.
+
+O \textit{Flipper Zero} \cite{flipper} inspira o conceito de um dispositivo
+multifuncional para NFC, RFID e infravermelho, porém trata-se de hardware
+fechado e de custo elevado, sem foco em linguagem ou em ensino.
+
+No contexto brasileiro, o \textit{Portugol Studio} \cite{portugol} mostrou o
+valor pedagógico de uma linguagem com palavras-chave em português para o
+ensino de algoritmos, mas não é voltado a sistemas embarcados.
+
+O Tupã ocupa a lacuna entre essas abordagens: uma linguagem textual em
+português, que compila para C++/Arduino nativo e executa no ESP32, pensada
+para \textit{makers} e para o ensino de sistemas embarcados.
+
+% ===============================================================
+\section{A Linguagem Tupã}\label{sec:linguagem}
+% ===============================================================
+\subsection{Princípios de Projeto}
+O Tupã foi projetado segundo três princípios: (i) \emph{sintaxe em
+português}, com palavras-chave como \texttt{se}, \texttt{senao},
+\texttt{inteiro} e \texttt{verdadeiro}; (ii) \emph{eventos de hardware de
+primeira classe}, em que reações a estímulos físicos são construções da
+própria linguagem, e não chamadas de biblioteca; e (iii) \emph{abstração de
+periféricos por módulos}, como \texttt{nfc}, \texttt{led} e \texttt{ir},
+cujos detalhes de pinagem e inicialização ficam a cargo do compilador.
+
+\subsection{Exemplo Canônico}
+A Listagem~\ref{lst:controle} apresenta um controle de acesso por cartão: ao
+pressionar o botão 1, o dispositivo lê um cartão NFC e acende o LED verde se
+o cartão for válido, ou o vermelho caso contrário.
+
+\begin{lstlisting}[language=Tupa, caption={Controle de acesso por cartão NFC em Tupã (\texttt{controle\_nfc.tupa}).}, label={lst:controle}]
+dispositivo controle {
+    inteiro tentativas = 3;
+
+    ao botao(1) {
+        # le um cartao NFC
+        cartao = nfc.ler();
+
+        se cartao.valido == verdadeiro {
+            led.verde();
+            esperar(1500);
+        } senao {
+            led.vermelho();
+        }
+    }
+}
+\end{lstlisting}
+
+Um programa Tupã é composto por um bloco \texttt{dispositivo}, que pode
+declarar variáveis de estado e um ou mais tratadores de evento introduzidos
+pela palavra-chave \texttt{ao}. Dentro de um tratador, o usuário utiliza
+estruturas de controle e chamadas a métodos dos módulos de hardware.
+
+\subsection{Léxico}
+O vocabulário da linguagem é composto por 43 tipos de \textit{token},
+agrupados em palavras-chave, identificadores, literais, operadores e
+delimitadores, conforme a Tabela~\ref{tab:tokens}. Comentários de linha
+iniciam com \texttt{\#}.
+
+\begin{table}[htbp]
+\caption{Categorias de \textit{tokens} da linguagem Tupã}
+\begin{center}
+\begin{tabular}{lp{4.6cm}}
+\toprule
+\textbf{Categoria} & \textbf{Exemplos} \\
+\midrule
+Palavras-chave & \texttt{dispositivo}, \texttt{ao}, \texttt{se}, \texttt{senao}, \texttt{inteiro} \\
+Literais       & inteiros, \texttt{verdadeiro}, \texttt{falso} \\
+Operadores     & \texttt{==}, \texttt{=}, \ldots \\
+Delimitadores  & \texttt{\{ \}}, \texttt{( )}, \texttt{;}, \texttt{.} \\
+Identificadores & \texttt{cartao}, \texttt{tentativas} \\
+\bottomrule
+\end{tabular}
+\label{tab:tokens}
+\end{center}
+\end{table}
+% TODO: completar a tabela com a lista real dos 43 tokens (ou a contagem por categoria).
+
+\subsection{Gramática}
+A Fig.~\ref{fig:gramatica} apresenta um fragmento da gramática da linguagem
+em notação EBNF.
+
+% TODO: conferir esta gramática com a implementada no parser.
+\begin{figure}[htbp]
+\centering
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, numbers=none, xleftmargin=0pt, framexleftmargin=0pt]
+programa   ::= "dispositivo" ID "{" membro* "}"
+membro     ::= declaracao | evento
+declaracao ::= tipo ID "=" expr ";"
+evento     ::= "ao" ID "(" expr ")" bloco
+bloco      ::= "{" comando* "}"
+comando    ::= atribuicao | chamada ";" | decisao
+decisao    ::= "se" expr bloco ("senao" bloco)?
+atribuicao ::= ID "=" expr ";"
+chamada    ::= ID "." ID "(" args? ")"
+\end{lstlisting}
+\caption{Fragmento da gramática do Tupã em EBNF.}
+\label{fig:gramatica}
+\end{figure}
+
+% ===============================================================
+\section{Arquitetura do Compilador}\label{sec:compilador}
+% ===============================================================
+O compilador do Tupã é implementado em Python 3 e segue a arquitetura
+clássica de compiladores \cite{aho}, organizada em quatro fases
+encadeadas, ilustradas na Fig.~\ref{fig:pipeline}. A saída é um arquivo
+\texttt{.ino}, compilado e gravado no ESP32 pela Arduino CLI \cite{arduinocli}.
+
+\begin{figure*}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=0.45cm,
+  fase/.style={draw=orange!80!black, thick, rounded corners, minimum width=2.1cm,
+               minimum height=1.0cm, align=center, font=\small},
+  ext/.style={draw=gray, rounded corners, minimum width=1.8cm,
+              minimum height=1.0cm, align=center, font=\small},
+  seta/.style={-{Stealth[length=2mm]}, thick}
+]
+\node[ext]  (src) {\texttt{.tupa}\\ \scriptsize texto};
+\node[fase, right=of src] (lex) {Léxico\\ \scriptsize \textit{tokens}};
+\node[fase, right=of lex] (par) {Sintático\\ \scriptsize AST};
+\node[fase, right=of par] (sem) {Semântico\\ \scriptsize tipos / hardware};
+\node[fase, right=of sem] (gen) {Geração\\ \scriptsize C++ / \texttt{.ino}};
+\node[ext,  right=of gen] (esp) {ESP32\\ \scriptsize Arduino CLI};
+\draw[seta] (src) -- (lex);
+\draw[seta] (lex) -- (par);
+\draw[seta] (par) -- (sem);
+\draw[seta] (sem) -- (gen);
+\draw[seta] (gen) -- (esp);
+\end{tikzpicture}
+\caption{Fluxo de compilação do Tupã, do código-fonte à gravação na placa.}
+\label{fig:pipeline}
+\end{figure*}
+
+\subsection{Análise Léxica}
+O analisador léxico converte o texto-fonte em uma sequência de
+\textit{tokens}, registrando linha e coluna de cada um para uso nas
+mensagens de erro das fases seguintes.
+% TODO: descrever a técnica (expressões regulares, autômato escrito à mão, etc.).
+
+\subsection{Análise Sintática}
+O analisador sintático consome os \textit{tokens} e constrói uma árvore
+sintática abstrata (AST) que representa o dispositivo, suas declarações e
+seus tratadores de evento.
+% TODO: informar a técnica (ex.: descendente recursivo) e os tipos de nó da AST.
+
+\subsection{Análise Semântica}
+A análise semântica é o que diferencia o Tupã de um simples tradutor de
+texto. Além das verificações usuais, como tipos e declaração de variáveis,
+ela valida o uso dos módulos de hardware: cada módulo expõe um conjunto
+conhecido de métodos, e chamadas inexistentes são rejeitadas antes de
+qualquer código ser gerado. A Fig.~\ref{fig:erro} mostra a mensagem emitida
+quando o programador chama um método inexistente no módulo \texttt{led}: o
+erro é localizado por linha e coluna, explicado em português e acompanhado
+da lista de métodos disponíveis, em tom didático.
+
+\begin{figure}[htbp]
+\centering
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, numbers=none, xleftmargin=0pt, framexleftmargin=0pt]
+$ tupa build controle.tupa
+
+erro semantico - linha 9, coluna 9
+    led.roxo();
+        ^^^^
+metodo inexistente no modulo 'led'
+
+disponiveis: verde(), vermelho(), apagar()
+
+compilacao interrompida: 1 erro
+\end{lstlisting}
+\caption{Mensagem de erro semântico emitida pelo compilador.}
+\label{fig:erro}
+\end{figure}
+
+\subsection{Geração de Código}
+O gerador percorre a AST validada e emite um programa Arduino completo: as
+inclusões de bibliotecas necessárias, como a MFRC522 para o leitor NFC
+\cite{mfrc522}; as definições de pinos; a inicialização dos periféricos em
+\texttt{setup()}; e a tradução dos tratadores de evento para verificações
+dentro de \texttt{loop()}. Apenas os módulos efetivamente usados pelo
+programa são incluídos.
+% TODO: explicar como o mapeamento de pinos é definido (fixo, configurável, arquivo de placa).
+
+\subsection{Plataforma de Hardware}
+O protótipo utiliza uma placa ESP32 DevKit v1 \cite{esp32}, um leitor
+NFC/RFID MFRC522, emissor e receptor infravermelho, LEDs e botões. O custo
+estimado do hardware é de aproximadamente R\$~120, e todo o software
+utilizado é de código aberto.
+
+% ===============================================================
+\section{Resultados Preliminares}\label{sec:resultados}
+% ===============================================================
+As quatro fases do compilador estão implementadas, e um conjunto de 11 testes
+automatizados é executado com sucesso. O exemplo canônico da
+Listagem~\ref{lst:controle} é compilado de ponta a ponta até um arquivo
+\texttt{.ino} válido para a Arduino CLI.
+
+A Tabela~\ref{tab:comparacao} compara o programa em Tupã com o C++ gerado.
+O código produzido é aproximadamente seis vezes maior, e nenhuma linha
+relativa à configuração do hardware precisa ser escrita pelo usuário.
+
+\begin{table}[htbp]
+\caption{Tupã versus C++ gerado para o controle de acesso NFC}
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Métrica} & \textbf{Tupã} & \textbf{C++ gerado} \\
+\midrule
+Linhas totais                & 12 & 75 \\
+Linhas de código             & 12 & 68 \\
+Inclusões de bibliotecas     & 0  & sim \\
+Definições de pinos          & 0  & sim \\
+\texttt{setup()} / \texttt{loop()} & 0 & sim \\
+\bottomrule
+\end{tabular}
+\label{tab:comparacao}
+\end{center}
+\end{table}
+% TODO: substituir "sim" pelas contagens exatas do .ino gerado.
+
+% TODO: quando a integração estiver concluída, acrescentar:
+%  - tempo de compilação/gravação;
+%  - foto do protótipo funcionando (\includegraphics);
+%  - testes com usuários, se houver (ex.: estudantes escrevendo o mesmo programa em Tupã e em C++).
+
+% ===============================================================
+\section{Conclusão e Trabalhos Futuros}\label{sec:conclusao}
+% ===============================================================
+Este artigo apresentou o Tupã, uma linguagem de domínio específico em
+português para programação de microcontroladores ESP32, e seu compilador,
+que percorre as quatro fases clássicas de compilação e gera C++ compatível
+com o ecossistema Arduino. Os resultados preliminares indicam que a
+linguagem reduz significativamente a quantidade de código que o usuário
+precisa escrever e elimina a configuração manual do hardware, enquanto a
+análise semântica orientada a módulos detecta erros antes da gravação.
+
+Os próximos passos incluem: concluir a integração com o ESP32, automatizando
+a compilação e a gravação a partir do comando \texttt{tupa build}; ampliar os
+módulos suportados, em especial infravermelho; documentar a linguagem e o
+compilador no repositório Git; e, fora do escopo do MVP, permitir a
+atualização do firmware por Wi-Fi (OTA). Também se pretende avaliar o uso da
+linguagem em contexto de ensino de sistemas embarcados.
+
+\section*{Agradecimentos}
+Os autores agradecem ao professor da disciplina de Linguagens Formais e
+Compiladores do IBMEC pela orientação. % TODO: nome do professor
+
+% ---------------------------------------------------------------
+% Referências
+% TODO: conferir todas as referências (anos, páginas, URLs e datas de acesso).
+% ---------------------------------------------------------------
+\begin{thebibliography}{00}
+\bibitem{aho} A. V. Aho, M. S. Lam, R. Sethi, and J. D. Ullman, \textit{Compilers: Principles, Techniques, and Tools}, 2nd ed. Boston, MA: Addison-Wesley, 2006.
+\bibitem{arduino} Arduino, ``Arduino language reference.'' [Online]. Available: \url{https://docs.arduino.cc/language-reference/}
+\bibitem{arduinocli} Arduino, ``Arduino CLI.'' [Online]. Available: \url{https://arduino.github.io/arduino-cli/}
+\bibitem{makecode} J. Devine, J. Finney, P. de Halleux, M. Moskal, T. Ball, and S. Hodges, ``MakeCode and CODAL: intuitive and efficient embedded systems programming for education,'' \textit{J. Syst. Archit.}, vol. 98, pp. 468--483, 2019.
+\bibitem{blockly} N. Fraser, ``Ten things we've learned from Blockly,'' in \textit{Proc. IEEE Blocks and Beyond Workshop}, 2015, pp. 49--50.
+\bibitem{flipper} Flipper Devices, ``Flipper Zero.'' [Online]. Available: \url{https://flipperzero.one/}
+\bibitem{portugol} L. H. Noschang, A. Pelz, E. A. Raabe, and A. L. A. Raabe, ``Portugol Studio: uma IDE para iniciantes em programação,'' in \textit{Anais do Workshop sobre Educação em Computação (WEI/CSBC)}, 2014.
+\bibitem{esp32} Espressif Systems, ``ESP32 series datasheet.'' [Online]. Available: \url{https://www.espressif.com/en/support/documents/technical-documents}
+\bibitem{mfrc522} NXP Semiconductors, ``MFRC522: standard performance MIFARE and NTAG frontend,'' product data sheet.
+\end{thebibliography}
+
+\end{document}

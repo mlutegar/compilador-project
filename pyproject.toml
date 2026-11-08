@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tupa"
+version = "0.1.0"
+description = "Tupã: linguagem de domínio específico e compilador para ESP32 (gera .ino)"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+tupa = "compilador.cli:main"
+
+[tool.setuptools]
+packages = ["compilador"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

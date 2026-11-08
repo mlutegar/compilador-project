@@ -1,4 +1,4 @@
-# Dependências
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -7,18 +7,36 @@ __pycache__/
 env/
 venv/
 .venv/
+*.egg-info/
+dist/
+.pytest_cache/
 
-# IDE
+# LaTeX
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.bbl
+*.blg
+*.toc
+
+# Build / saída do compilador
+build/
+/output/
+
+# Segredos / ambiente
+.env*
+
+# Node (gerador de decks, front end)
+node_modules/
+package-lock.json
+
+# IDE / OS
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Build
-build/
-dist/
-*.egg-info/

@@ -144,13 +144,40 @@ compiladores-projeto/
 
 ## 🚀 Fases do Compilador
 
-| # | Fase | Status | Descrição | Entrega |
-|---|------|--------|-----------|---------|
-| 1 | **Análise Léxica** | 🔄 Em andamento | Tokenização do código-fonte | AP1 |
-| 2 | **Análise Sintática** | ⏳ Pendente | Construção da AST a partir dos tokens | AP2 |
-| 3 | **Análise Semântica** | ⏳ Pendente | Verificação de tipos, escopo e validação de hardware | AP2 |
-| 4 | **Geração de Código** | ⏳ Pendente | Transpilação da AST para C++/Arduino | AP2 |
-| 5 | **Integração ESP32** | ⏳ Pendente | Compilação e upload para o hardware | AP2 |
+| # | Fase | Status | Descrição | Código |
+|---|------|--------|-----------|--------|
+| 1 | **Análise Léxica** | ✅ Implementada | Tokenização do código-fonte | `src/tupac/lexer.py` |
+| 2 | **Análise Sintática** | ✅ Implementada | Construção da AST a partir dos tokens | `src/tupac/parser.py` |
+| 3 | **Análise Semântica** | ✅ Implementada | Verificação de tipos, escopo e validação de hardware | `src/tupac/semantic.py` |
+| 4 | **Geração de Código** | ✅ Implementada | Transpilação da AST para C++/Arduino | `src/tupac/codegen.py` |
+| 5 | **Integração ESP32** | ⏳ Pendente | Compilação e upload para o hardware | Arduino CLI |
+
+---
+
+## 🖥️ Como usar o compilador
+
+```bash
+# Análise léxica — lista os tokens
+python tupa.py tokens examples/controle_nfc.tupa
+
+# Análise sintática — imprime a AST
+python tupa.py ast examples/controle_nfc.tupa
+
+# Compilar (back-end) — gera output/controle_nfc.ino
+python tupa.py build examples/controle_nfc.tupa
+
+# Testes automatizados (11)
+python tests/test_compilador.py
+```
+
+Depois de gerar o `.ino`, compilar e gravar na placa:
+
+```bash
+arduino-cli compile --fqbn esp32:esp32:esp32 output/
+arduino-cli upload  --fqbn esp32:esp32:esp32 -p COM3 output/
+```
+
+Fases documentadas em [`docs/analise-sintatica-ast.md`](docs/analise-sintatica-ast.md) e [`docs/analise-semantica-e-codegen.md`](docs/analise-semantica-e-codegen.md).
 
 ---
 
