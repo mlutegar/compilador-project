@@ -262,6 +262,8 @@ python -m pytest tests -q
 
 Michel Lutegar, André Costa, Felipe Dutrain e Guilherme Lopes.
 
+Orientador: Prof. William Barbosa.
+
 Disciplina Linguagens Formais e Compiladores, IBMEC.
 
 ## Licença

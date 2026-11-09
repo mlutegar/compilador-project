@@ -123,7 +123,7 @@ roteiro = f"""# Roteiro da apresentação final do Tupã (P16)
 Banca de Linguagens Formais e Compiladores, IBMEC. Deck em `apresentacao/index.html` (setas navegam, **N** mostra as notas, **F** tela cheia) e versão impressa em `apresentacao.pdf`. Este arquivo é gerado por `python apresentacao/build.py`; as mesmas falas aparecem nas notas dos slides.
 
 **Tempo:** 10:00 de fala em 14 slides, mais 3:00 de demonstração ao vivo no slide 13.
-**Equipe:** Michel Lutegar (Michel), André Costa (André), Felipe Dutrain (Felipe), Guilherme Lopes (Guilherme).
+**Equipe:** Michel Lutegar (Michel), André Costa (André), Felipe Dutrain (Felipe), Guilherme Lopes (Guilherme). **Orientador:** Prof. William Barbosa.
 
 ## Fala por slide
 
@@ -146,7 +146,7 @@ Total: {mmss(total)}, mais a demonstração. Na demo: André abre o site, compil
 5. Apertar o botão com o cartão `33 8F BD F7`: LED vermelho, "acesso negado".
 6. Apertar o botão sem cartão: após 3 s, "Cartao: nenhum detectado em 3 s" e "acesso negado".
 
-% TODO (placa): o `.ino` gerado de `controle_nfc.tupa` ainda não foi gravado e testado nos três casos. Fazer isso antes da banca. Até hoje só o `teste_hardware.ino` manual foi validado em bancada (26/10/2026).
+**Resultado na placa (09/11/2026):** o `controle_nfc` gerado foi gravado (Arduino IDE, ESP32 Wrover, COM5) e executado. No Serial a 115200: `RC522 versao: 0xB2 -> OK`; `Botao: PRESSIONADO` uma vez por aperto e `Botao: solto`; sem cartão, `Cartao: nenhum detectado em 3 s`, `acesso negado` e LED vermelho, repetido de forma consistente. Nesse dia o leitor não detectou cartões (nem com o firmware manual): falha de contato ou antena no módulo RC522. Por isso os passos 4 e 5 (cartão liberado e negado) não foram reproduzidos com o código gerado; a leitura de UIDs foi validada na bancada de 26/10/2026. Não afirmar que o código gerado leu cartão ou acendeu o LED verde.
 
 ## Plano B da demonstração
 
@@ -157,7 +157,7 @@ Total: {mmss(total)}, mais a demonstração. Na demo: André abre o site, compil
 
 ## Antes da banca
 
-- [ ] % TODO (placa): gravar o `.ino` gerado e testar os três casos.
+- [ ] Validar a leitura de cartões com o código gerado após substituir ou ressoldar o módulo RC522.
 - [ ] Compilar o `controle_nfc` no site e baixar o `.ino` com antecedência, como cópia local.
 - [ ] Placa ligada por USB, Arduino IDE em ESP32 Wrover Module, Monitor Serial em 115200, cartões `33 7A 87 F7` (liberado) e `33 8F BD F7` (negado) à mão.
 - [ ] Abrir `apresentacao/index.html` em tela cheia (F), testar a tecla N, ter o vídeo e o `apresentacao.pdf` à mão.
@@ -186,7 +186,7 @@ Porque a linguagem é pequena, o programa típico tem poucas linhas e um erro de
 Para o programa ficar portátil e legível: `ao botao(1)` não diz em que GPIO o botão está. A lista de UIDs ficou na placa porque era a opção que pedia menos mudança (nenhum token, regra ou nó novo). Declarar a lista no `.tupa` é uma evolução possível.
 
 **8. O código gerado já foi testado na placa?**
-Compila de verdade com arduino-cli 1.5.1 e core esp32 3.3.12 (4 sketches, sem erro nem aviso), e o hardware e a pinagem foram validados em bancada com o `teste_hardware.ino` manual em 26/10/2026. A gravação do `.ino` gerado a partir do Tupã é a demonstração ao vivo. % TODO (placa): confirmar o resultado antes da banca e ajustar esta resposta.
+Compila de verdade com arduino-cli 1.5.1 e core esp32 3.3.12 (4 sketches, sem erro nem aviso), e o hardware e a pinagem foram validados em bancada com o `teste_hardware.ino` manual em 26/10/2026. Em 09/11/2026 o `controle_nfc` gerado foi gravado e executado no ESP32-WROVER-DEV: inicialização do RC522 (`0xB2 -> OK`), botão com debounce, espera de 3 s, lógica de negação e LED vermelho funcionaram. A leitura de cartões com o código gerado não foi verificada, porque o módulo RC522 não detectou cartões nesse dia (nem com o firmware manual); a leitura de UIDs foi validada na bancada de 26/10/2026. Próximo passo: substituir ou ressoldar o módulo.
 
 ## Fontes dos números
 

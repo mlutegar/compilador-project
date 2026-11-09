@@ -180,6 +180,7 @@ def montar(n):
     <div style="font-size:150px;font-weight:800;color:var(--branco);letter-spacing:.14em;line-height:1.05;margin-top:10px">TUPÃ</div>
     <div style="font-size:44px;font-weight:600;color:var(--laranja);margin-top:6px">Programe o ESP32 em português.</div>
     <div style="font-size:21px;color:var(--corpo);margin-top:56px;line-height:1.6">Michel Lutegar · André Costa<br>Felipe Dutrain · Guilherme Lopes</div>
+    <div style="font-size:19px;color:var(--corpo);margin-top:10px">Orientador: Prof. William Barbosa</div>
     <div style="font-size:15px;color:var(--cinza);margin-top:16px;letter-spacing:.1em;text-transform:uppercase">Linguagens Formais e Compiladores · IBMEC</div>
   </div>''', "Michel", 25,
           "Boa tarde, banca. Somos Michel, André, Felipe e Guilherme. O Tupã é uma linguagem em português que um compilador "
@@ -451,8 +452,10 @@ compilacao interrompida: 1 erro</pre></div>
           "na placa com Arduino IDE em ESP32 Wrover Module, 115200 no monitor serial. O Felipe lê o serial, que mostra a checagem "
           "do RC522. Botão com o cartão 33 7A 87 F7: LED verde, acesso liberado. Botão com 33 8F BD F7: vermelho, negado. Botão "
           "sem cartão: depois de 3 segundos, nenhum detectado, negado. O Michel narra e faz a ponte com a banca. "
-          "% TODO (placa): o .ino gerado de controle_nfc.tupa ainda precisa ser gravado e testado nos três casos antes da banca; "
-          "hoje só o teste_hardware.ino manual foi validado em bancada (26/10/2026). Plano B no roteiro.md.")
+          "Resultado na placa em 09/11/2026: o controle_nfc gerado foi gravado e executado; o serial mostrou RC522 versao 0xB2 OK, botão com debounce "
+          "(uma linha por aperto) e, sem cartão, nenhum detectado em 3 segundos, acesso negado e LED vermelho. Nesse dia o leitor não detectou "
+          "cartões (falha de contato ou antena no módulo RC522), então não afirmar leitura de cartão nem LED verde com o código gerado; "
+          "a leitura de UIDs foi validada na bancada de 26/10/2026. Plano B no roteiro.md.")
 
     # 14 conclusão
     slide(f'''

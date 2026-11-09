@@ -9,6 +9,7 @@ Registro dos prompts executados no projeto (um por etapa).
 - **P14**: análise semântica, tabela de erros com códigos estáveis e evidência de compilação.
 - **P15**: artigo IEEE expandido de 5 para 9 páginas (`artigo/main.tex`).
 - **P16**: apresentação final refeita do zero (14 slides, PDF e roteiro com perguntas da banca).
+- **P17**: autores, e-mails e orientador (artigo, apresentação, README); resultado do código gerado na placa em 09/11/2026.
 
 ## Status
 
@@ -29,4 +30,5 @@ Registro dos prompts executados no projeto (um por etapa).
 | P13 | Apresentação final | concluído |
 | P14 | Análise semântica, tabela de erros, evidência de compilação | concluído |
 | P15 | Artigo expandido para 9 páginas | concluído |
-| P16 | Apresentação final refeita (14 slides, PDF, roteiro) | concluído (falta gravar o .ino gerado na placa) |
+| P16 | Apresentação final refeita (14 slides, PDF, roteiro) | concluído |
+| P17 | Autores, orientador e resultado na placa | concluído (falta validar leitura de cartão com o código gerado) |

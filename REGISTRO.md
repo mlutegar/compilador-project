@@ -182,3 +182,27 @@ Diário de decisões e mudanças.
 - % TODO (placa): o `.ino` gerado de `controle_nfc.tupa` ainda não foi gravado e testado nos três casos (liberado, negado, sem cartão). O aviso está só nas notas do slide 13 e no `roteiro.md`; a pergunta 8 da banca depende dele.
 - Cada slide fala em média 2:30 por pessoa (Michel 2:30, André 2:25, Felipe 2:25, Guilherme 2:40).
 
+---
+
+## P17 · Autores, orientador e resultado na placa (09/11/2026) · concluído
+
+**Resultado**
+- Artigo: e-mails dos quatro autores (@alunos.ibmec.edu.br) e agradecimento ao Prof. William Barbosa, orientador. O e-mail do professor não aparece em lugar nenhum. Apresentação (capa, roteiro) e README (seção Autores) com "Orientador: Prof. William Barbosa".
+- Resumo, Resultados (nova subseção "Validação do código gerado na placa"), Tabela de métricas, Discussão, Conclusão e Trabalhos futuros ajustados ao resultado da placa; todos os `% TODO (placa)` removidos do artigo e das notas da apresentação.
+- `main.pdf` com 9 páginas, sem erros; `apresentacao.pdf` regerado (14 slides).
+
+**Avisos**
+- Não se afirma que o código gerado leu cartão nem acendeu o LED verde. Trabalho futuro: validar a leitura de cartões com o código gerado após substituir ou ressoldar o módulo RC522.
+- Mantidos os `% TODO` de tempo de compilação e gravação (sem dado real), testes com usuários e datasheet do MFRC522.
+
+## Validação na placa (09/11/2026)
+
+`controle_nfc` gerado pelo Tupã, gravado com Arduino IDE (placa ESP32 Wrover, COM5) e executado no ESP32-WROVER-DEV. Monitor Serial a 115200:
+
+- Leitor: `RC522 versao: 0xB2 -> OK` (chip compatível/clone).
+- Botão com debounce: `Botao: PRESSIONADO` uma única vez por aperto e `Botao: solto`.
+- Espera de 3 s: `Cartao: nenhum detectado em 3 s`, depois `acesso negado` e LED vermelho, repetido várias vezes de forma consistente.
+
+O firmware manual (`teste_hardware.ino`) também foi regravado no mesmo dia: botão e sensor IR responderam (`IR: obstaculo detectado` / `IR: livre`).
+
+Nesse dia o leitor não detectou cartões, nem com o firmware manual: indício de falha de contato ou antena no módulo RC522. A leitura de cartões e UIDs foi validada no teste de bancada de 26/10/2026, com o mesmo hardware.

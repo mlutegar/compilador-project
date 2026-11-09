@@ -60,13 +60,13 @@
 \IEEEauthorblockA{\textit{Engenharia de Computação} \\
 \textit{IBMEC}\\
 Rio de Janeiro, Brasil \\
-email@aluno.ibmec.edu.br} % TODO: e-mail de Michel (so o Joao sabe)
+202208385192@alunos.ibmec.edu.br}
 \and
 \IEEEauthorblockN{André Costa}
 \IEEEauthorblockA{\textit{Engenharia de Computação} \\
 \textit{IBMEC}\\
 Rio de Janeiro, Brasil \\
-email@aluno.ibmec.edu.br} % TODO: e-mail de Andre (so o Joao sabe)
+202208385371@alunos.ibmec.edu.br}
 \and
 \IEEEauthorblockN{Felipe Dutrain} 
 \IEEEauthorblockA{\textit{Engenharia de Computação} \\
@@ -78,7 +78,7 @@ Rio de Janeiro, Brasil \\
 \IEEEauthorblockA{\textit{Engenharia de Computação} \\
 \textit{IBMEC}\\
 Rio de Janeiro, Brasil \\
-202401632473@aluno.ibmec.edu.br} % TODO: confirmar dominio do e-mail de Guilherme (aluno vs alunos; o de Felipe usa alunos)
+202401632473@alunos.ibmec.edu.br}
 }
 
 \maketitle
@@ -101,11 +101,13 @@ mensagens de erro didáticas em português. Em um exemplo de controle de acesso
 por cartão NFC, um programa de 12 linhas de código em Tupã gera 100 linhas de
 código C++, cerca de 8,3 vezes mais, sem que o usuário precise escrever inclusões de bibliotecas,
 definições de pinos ou as funções de configuração e laço principal. Os
-programas gerados compilam com a Arduino CLI, e um teste de bancada com
-firmware escrito à mão validou o protótipo com ESP32-WROVER, leitor RC522 e
-sensor infravermelho de obstáculo. O projeto encontra-se em desenvolvimento,
-com as quatro fases do compilador implementadas e a gravação do código gerado
-na placa ainda pendente.
+programas gerados compilam com a Arduino CLI. O código gerado para o controle
+de acesso foi gravado e executado em um ESP32-WROVER-DEV, e validou na placa a
+inicialização do leitor RC522, o botão com \textit{debounce}, a espera de três
+segundos, a lógica de negação e os LEDs. A leitura de cartões com o código
+gerado não pôde ser verificada, pois nesse dia o módulo RC522 não detectou
+cartões; essa leitura foi validada em bancada, com firmware escrito à mão e o
+mesmo hardware, em 26/10/2026.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -889,8 +891,8 @@ O teste de bancada, de 26/10/2026, foi feito com o firmware escrito à mão
 montagem e o Monitor Serial. O teste leu três UIDs distintos
 (\texttt{33 7A 87 F7}, \texttt{43 A3 6F F5} e \texttt{33 8F BD F7}) e registrou
 o botão e o sensor infravermelho. As imagens, portanto, são do firmware
-manual: o código gerado pelo compilador ainda \emph{não} foi gravado nem
-executado na placa.
+manual. O código gerado foi testado em outro dia, como descrito na
+Seção~\ref{sec:resultados-placa}.
 
 \begin{figure}[htbp]
 \centering
@@ -988,8 +990,8 @@ núcleo do ESP32.
 \end{center}
 \end{table}
 
-A Tabela~\ref{tab:testes} resume as métricas de verificação. Os campos
-marcados com TODO dependem da gravação do \texttt{.ino} gerado na placa.
+A Tabela~\ref{tab:testes} resume as métricas de verificação; a validação do
+código gerado na placa é descrita na Seção~\ref{sec:resultados-placa}.
 
 \begin{table}[htbp]
 \caption{Métricas de verificação do projeto}
@@ -1006,8 +1008,8 @@ Testes do compilador & 41 \\
 Testes do catálogo de erros & 46 \\
 Testes da API web & 11 \\
 Sketches compilados sem erro & 4 de 4 \\
-Teste de bancada com o 	exttt{.ino} gerado & \% TODO (placa) \\
-Taxa de acerto no teste de bancada com o gerado & TODO (placa) \% \\
+Gravação e execução do \texttt{.ino} gerado & sim (09/11/2026) \\
+Leitura de cartão com o código gerado & não verificada \\
 \bottomrule
 \end{tabular}
 \label{tab:testes}
@@ -1016,6 +1018,27 @@ Taxa de acerto no teste de bancada com o gerado & TODO (placa) \% \\
 
 % TODO: tempo de compilação e de gravação na placa (medir com arduino-cli).
 % TODO: testes com usuários, se houver.
+
+\subsection{Validação do código gerado na placa}\label{sec:resultados-placa}
+Em 09/11/2026, o \texttt{controle\_nfc} gerado pelo Tupã foi gravado pela
+Arduino IDE (placa ESP32 Wrover Module, porta COM5) e executado no
+ESP32-WROVER-DEV. No Monitor Serial a 115200 baud, observou-se: (i) a checagem
+do leitor, \texttt{RC522 versao: 0xB2 -> OK}, valor de um chip compatível
+(clone); (ii) o botão com \textit{debounce}, com uma única linha
+\texttt{Botao: PRESSIONADO} por aperto e \texttt{Botao: solto} ao soltar; (iii)
+a espera de 3 s por um cartão, com \texttt{Cartao: nenhum detectado em 3 s}
+seguido de \texttt{acesso negado} e LED vermelho, repetido várias vezes de
+forma consistente. O firmware manual (\texttt{teste\_hardware.ino}) também foi
+regravado no mesmo dia, e o botão e o sensor infravermelho responderam
+(\texttt{IR: obstaculo detectado} e \texttt{IR: livre}).
+
+Nesse dia, porém, o leitor não detectou cartões, nem com o firmware manual, o
+que indica falha de contato ou de antena no módulo RC522. Por isso, este
+trabalho \emph{não} afirma que o código gerado leu um cartão ou acendeu o LED
+verde. A leitura de cartões e de UIDs foi validada no teste de bancada de
+26/10/2026, com o mesmo hardware. Em resumo, o compilador foi validado no
+hardware quanto ao botão, à temporização, à lógica de negação, aos LEDs e à
+inicialização do leitor.
 
 % ===============================================================
 \section{Discussão e Limitações}\label{sec:discussao}
@@ -1034,8 +1057,8 @@ O compilador reporta um erro por vez e não se recupera de erros sintáticos.
 infravermelho nem controle remoto. (iv) Não há atualização do firmware por
 Wi-Fi (OTA); a gravação é manual, pela Arduino CLI. (v) A linguagem não foi
 avaliada com usuários, de modo que a hipótese de ganho didático ainda não foi
-testada. (vi) O código gerado compila, mas ainda não foi gravado na placa,
-portanto seu comportamento no hardware não foi verificado. Por fim, as
+testada. (vi) O código gerado foi gravado e executado na placa, mas a leitura de
+cartões com ele não foi verificada, por falha no módulo RC522 naquele dia. Por fim, as
 métricas de linhas dependem do estilo de formatação do gerador e comparam com
 um único firmware manual de referência, o que limita a generalização.
 
@@ -1043,8 +1066,9 @@ Quanto à validade dos resultados, a redução de linhas mede esforço de
 digitação, e não esforço cognitivo: ela não prova que o Tupã seja mais fácil de
 aprender, apenas que ele dispensa código repetitivo. A comparação com C++ usa
 um firmware manual escrito pelos próprios autores, que poderiam tê-lo escrito
-de modo mais enxuto ou mais robusto. Além disso, o teste de bancada validou o
-hardware e a pinagem, e não o código gerado. Por isso, os números de memória e
+de modo mais enxuto ou mais robusto. Além disso, o teste de bancada de 26/10 validou o
+hardware e a pinagem com firmware manual, e a validação do código gerado na
+placa não incluiu a leitura de cartões. Por isso, os números de memória e
 de linhas devem ser lidos como evidência de viabilidade, e não como avaliação
 definitiva.
 
@@ -1060,21 +1084,22 @@ precisa escrever e elimina a configuração manual do hardware, enquanto a
 análise semântica orientada a módulos detecta erros antes da gravação. O
 protótipo com ESP32-WROVER, RC522, sensor infravermelho de obstáculo, botão e
 LEDs foi validado em bancada com um firmware escrito à mão, e os programas
-gerados compilam com a Arduino CLI para a placa-alvo. Falta, porém, gravar o
-\texttt{.ino} gerado na placa e repetir o teste de bancada com ele, de modo que
-o funcionamento do código gerado no hardware ainda não foi verificado.
+gerados compilam com a Arduino CLI para a placa-alvo. O \texttt{controle\_nfc}
+gerado foi gravado e executado na placa, e validou o botão, a temporização, a
+lógica de negação, os LEDs e a inicialização do leitor. Falta validar a
+leitura de cartões com o código gerado, o que depende de substituir ou
+ressoldar o módulo RC522.
 
-Os próximos passos incluem: gravar na placa o código gerado por
-\texttt{controle\_nfc.tupa} e \texttt{teste\_hardware.tupa} e comparar seu
-comportamento com o do firmware manual; automatizar a compilação e a gravação a
+Os próximos passos incluem: validar a leitura de cartões com o código gerado
+após substituir ou ressoldar o módulo RC522; automatizar a compilação e a gravação a
 partir do comando \texttt{tupa build}; ampliar os módulos suportados, como o
 envio de infravermelho, hoje fora do escopo; suportar outras placas além da
 ESP32-WROVER; permitir a atualização do firmware por Wi-Fi (OTA); e avaliar o
 uso da linguagem com estudantes em contexto de ensino de sistemas embarcados.
 
 \section*{Agradecimentos}
-Os autores agradecem ao professor da disciplina de Linguagens Formais e
-Compiladores do IBMEC pela orientação. % TODO: nome do professor (so o Joao sabe)
+Os autores agradecem ao Prof. William Barbosa, orientador do trabalho na
+disciplina de Linguagens Formais e Compiladores do IBMEC, pela orientação.
 
 % ---------------------------------------------------------------
 % Referências
