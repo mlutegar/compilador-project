@@ -1,7 +1,7 @@
 """CLI do compilador Tupã.
 
 Uso:
-    tupa build <arquivo.tupa> [-o saida.ino]   # gera C++/Arduino
+    tupa build <arquivo.tupa> [-o pasta] [--placa p]  # gera <pasta>/<pasta>.ino
     tupa tokens <arquivo.tupa>                 # lista os tokens (análise léxica)
     tupa ast <arquivo.tupa>                    # imprime a AST (análise sintática)
 """
@@ -29,18 +29,20 @@ def _cmd_build(args):
     codigo = _ler(args.arquivo)
     tokens = tokenizar(codigo)
     ast = parsear(tokens)
-    analisar(ast)
-    ino = gerar_ino(ast, placa)
+    analisar(ast, placa)
+    ino = gerar_ino(ast, placa, os.path.basename(args.arquivo))
 
+    # O arduino-cli exige <pasta>/<pasta>.ino. -o indica a pasta do sketch
+    # (se terminar em .ino, usa o nome sem a extensão como pasta).
     if args.saida:
-        destino = args.saida
+        pasta = args.saida[:-4] if args.saida.endswith(".ino") else args.saida
     else:
-        base = os.path.splitext(os.path.basename(args.arquivo))[0]
-        os.makedirs("output", exist_ok=True)
-        destino = os.path.join("output", base + ".ino")
+        pasta = os.path.join("output", os.path.splitext(os.path.basename(args.arquivo))[0])
+    pasta = pasta.rstrip("/\\")
+    destino = os.path.join(pasta, os.path.basename(pasta) + ".ino")
 
-    os.makedirs(os.path.dirname(destino) or ".", exist_ok=True)
-    with open(destino, "w", encoding="utf-8") as f:
+    os.makedirs(pasta, exist_ok=True)
+    with open(destino, "w", encoding="utf-8", newline="\n") as f:
         f.write(ino)
     print(f"-> {destino}")
     return 0
@@ -66,7 +68,8 @@ def build_parser():
 
     b = sub.add_parser("build", help="compila .tupa para .ino")
     b.add_argument("arquivo")
-    b.add_argument("-o", "--saida", help="arquivo .ino de saída")
+    b.add_argument("-o", "--saida",
+                   help="pasta do sketch de saída; grava <pasta>/<pasta>.ino (padrão: output/<nome>)")
     b.add_argument("--placa", default=PLACA_PADRAO,
                    help="placa-alvo: nome em compilador/placas/ ou caminho de um .json (padrão: %(default)s)")
     b.set_defaults(func=_cmd_build)

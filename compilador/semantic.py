@@ -11,6 +11,7 @@ Erros conhecidos, ex.: `led.roxo()` -> método inexistente, listando os válidos
 
 from . import ast_nodes as A
 from .errors import ErroSemantico
+from .placa import carregar_placa
 
 # API de hardware: método -> (n_args, tipo_retorno)
 HARDWARE_API = {
@@ -22,8 +23,10 @@ HARDWARE_API = {
         "metodos": {"ler": (0, "cartao")},
         "propriedades": {},
     },
+    # Sensor IR de OBSTÁCULO (emissor + receptor no mesmo módulo, saída digital).
+    # Não existe IR TX nem controle remoto.
     "ir": {
-        "metodos": {"enviar": (1, "vazio"), "receber": (0, "inteiro")},
+        "metodos": {"detectado": (0, "booleano")},
         "propriedades": {},
     },
     "botao": {
@@ -34,16 +37,18 @@ HARDWARE_API = {
 
 # Tipos "objeto" retornados por hardware e suas propriedades.
 TIPOS_OBJETO = {
-    "cartao": {"valido": "booleano", "id": "texto"},
+    "cartao": {"valido": "booleano", "uid": "texto"},
 }
 
 TIPOS_PRIMITIVOS = {"inteiro", "decimal", "texto", "booleano"}
 
 
 class AnalisadorSemantico:
-    def __init__(self):
+    def __init__(self, placa=None):
+        self.placa = placa or carregar_placa()
         # pilha de escopos: nome -> tipo
         self.escopos = [{}]
+        self.eventos_vistos = {}   # chave do evento -> linha da 1ª declaração
 
     # ---------- escopo ----------
     def _push(self):
@@ -74,14 +79,34 @@ class AnalisadorSemantico:
             self._comando(no)
 
     def _evento(self, no: A.Evento):
+        rotulo = f"ao botao({no.numero})"
         if no.numero < 1:
             raise ErroSemantico(
-                f"número de botão inválido: {no.numero}", no.linha, no.coluna
+                f"número de botão inválido: {no.numero}", no.linha, no.coluna, rotulo
             )
+        if no.numero not in self.placa.botoes:
+            disp = ", ".join(str(n) for n in sorted(self.placa.botoes)) or "nenhum"
+            raise ErroSemantico(
+                f"a placa '{self.placa.nome}' não tem pino configurado para o botao {no.numero}\n"
+                f"    botoes com pino: {disp}\n"
+                f"    para usar o botao {no.numero}, ligue-o a um GPIO e declare em "
+                f'"pinos.botoes" de compilador/placas/{self.placa.nome}.json',
+                no.linha, no.coluna, rotulo,
+            )
+        self._registra_evento(no, f"botao({no.numero})", rotulo)
         self._push()
         for c in no.corpo:
             self._comando(c)
         self._pop()
+
+    def _registra_evento(self, no, chave, rotulo):
+        if chave in self.eventos_vistos:
+            raise ErroSemantico(
+                f"o evento '{rotulo}' já foi declarado na linha {self.eventos_vistos[chave]}\n"
+                f"    junte os dois blocos em um só",
+                no.linha, no.coluna, rotulo,
+            )
+        self.eventos_vistos[chave] = no.linha
 
     # ---------- comandos ----------
     def _comando(self, no):
@@ -258,8 +283,12 @@ class AnalisadorSemantico:
     # ---------- auxiliares ----------
     def _erro_membro_hw(self, modulo, membro, no):
         disp = ", ".join(f"{m}()" for m in HARDWARE_API[modulo]["metodos"])
+        dica = ""
+        if modulo == "ir":
+            dica = ("\n    o 'ir' e um sensor de obstaculo (emissor e receptor no mesmo modulo): "
+                    "nao existe IR TX nem controle remoto")
         raise ErroSemantico(
-            f"metodo inexistente no modulo '{modulo}'\n    disponiveis: {disp}",
+            f"metodo inexistente no modulo '{modulo}'\n    disponiveis: {disp}{dica}",
             no.linha, no.coluna, f"{modulo}.{membro}()",
         )
 
@@ -285,5 +314,5 @@ class AnalisadorSemantico:
             )
 
 
-def analisar(programa):
-    return AnalisadorSemantico().analisar(programa)
+def analisar(programa, placa=None):
+    return AnalisadorSemantico(placa).analisar(programa)
