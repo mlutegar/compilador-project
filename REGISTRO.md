@@ -2,6 +2,9 @@
 
 Diário de decisões e mudanças.
 
+## 2026-11-08: P01, levantamento do estado real
+- Levantamento do estado real do repositório, registrado em `docs/CONTEXTO.md` (conforme `PROMPTS.md`).
+
 ## 2026-11-08: P02, estrutura do repositório
 - `src/tupac/` virou `compilador/` (imports relativos, sem quebra); `tupa.py` substituído por `pyproject.toml` (comando `tupa`) e `python -m compilador`.
 - Artigo em `artigo/main.tex` (era `IEEE-conference-template-062824.tex`), figuras em `artigo/figuras/`.

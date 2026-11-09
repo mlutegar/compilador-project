@@ -43,3 +43,7 @@ Thumbs.db
 
 # Playground web: o lock do front deve ser versionado (npm ci no Docker)
 !web/app/package-lock.json
+
+# Fora do repo (Obsidian e pacote de entrega)
+obsidian-compilador-esp32/
+tupa_pacote_08-11.zip
