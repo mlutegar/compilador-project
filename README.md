@@ -1,64 +1,41 @@
-# 🔧 Compilador DSL para ESP32
+<div align="center">
 
-> **Desenvolvimento de uma linguagem de programação de domínio específico e de seu compilador para programação simplificada de dispositivos embarcados baseados em ESP32.**
+<img src="web/app/public/tupa-icone.png" alt="Logo do Tupã" width="120">
 
-Projeto da disciplina de **Compiladores** — criação de uma linguagem própria (DSL) e de todo o pipeline de compilação para controlar um dispositivo embarcado com **ESP32**, inspirado no conceito do [Flipper Zero](https://flipperzero.one/).
+# Tupã
 
-O diferencial do trabalho é o **compilador**: a linguagem é projetada para abstrair a complexidade do hardware e permitir que qualquer pessoa programe o dispositivo de forma intuitiva.
+**Da ideia ao hardware.**
 
----
+**Playground online: https://tupa.mrender.com.br**
 
-## 💡 Conceito
+</div>
 
-O projeto pode ser entendido como uma **plataforma programável** voltada para:
+![Playground do Tupã com o exemplo canônico compilado, aba C++](docs/img/playground.png)
 
-- **Makers** — prototipagem rápida de projetos com ESP32
-- **Ensino de sistemas embarcados** — programação simplificada sem precisar saber C++
-- **Segurança autorizada** — testes controlados com NFC/RFID e infravermelho
+## O que é
 
-Em vez de um "clone do Flipper Zero", o foco está na **linguagem e no compilador** que traduzem código de alto nível diretamente para o hardware.
+Tupã é uma linguagem de domínio específico, em português, e o compilador que a traduz para C++/Arduino.
+Você descreve o que o dispositivo ESP32 deve fazer (ao apertar um botão, ler um cartão NFC, acender um LED)
+e o compilador gera o `.ino` pronto para gravar na placa.
 
----
+**Por que existe:** programar microcontroladores exige C++, bibliotecas e documentação quase sempre em inglês.
+Essa barreira afasta quem está começando. O Tupã troca isso por comandos legíveis em português, com erros
+que explicam o que deu errado.
 
-## 🔄 Pipeline de Compilação
+![Protótipo montado: ESP32, leitor RC522, sensor IR, botão e LEDs](artigo/figuras/prototipo.jpg)
 
-```
-Código escrito na nossa linguagem (.dsl)
-        ↓
-    ┌────────┐
-    │  Lexer │  → Análise Léxica
-    └───┬────┘
-        ↓
-     Tokens
-        ↓
-    ┌────────┐
-    │ Parser │  → Análise Sintática
-    └───┬────┘
-        ↓
-      AST (Árvore Sintática Abstrata)
-        ↓
-    ┌──────────────────┐
-    │ Análise Semântica │  → Verificação de tipos, escopo, validação de hardware
-    └───────┬──────────┘
-        ↓
-    ┌──────────────────┐
-    │ Geração de Código │  → Transpilação para C++/Arduino
-    └───────┬──────────┘
-        ↓
-    C++ / Arduino (.ino)
-        ↓
-    Compilação (Arduino CLI / PlatformIO)
-        ↓
-    Upload → ESP32
-```
+## Exemplo
 
-A escolha de **DSL → C++/Arduino → ESP32** (em vez de criar uma VM na placa) é a abordagem mais segura e prática: aproveita todo o ecossistema Arduino, as bibliotecas de hardware já existentes e a toolchain de compilação madura.
+À esquerda, o programa Tupã ([`examples/controle_nfc.tupa`](examples/controle_nfc.tupa)). À direita, um trecho do
+C++ gerado ([`firmware/controle_nfc_gerado`](firmware/controle_nfc_gerado/controle_nfc_gerado.ino)).
 
----
-
-## 📝 A Linguagem
-
-A DSL possui comandos próprios para controlar hardware de forma legível e declarativa:
+<table>
+<tr>
+<th>Tupã</th>
+<th>C++ gerado (trecho)</th>
+</tr>
+<tr>
+<td valign="top">
 
 ```
 dispositivo controle {
@@ -67,202 +44,213 @@ dispositivo controle {
 
     ao botao(1) {
 
-        # lê um cartão NFC
+        # le um cartao NFC
         cartao = nfc.ler();
 
         se cartao.valido == verdadeiro {
             led.verde();
-            esperar(1000);
-        }
-        senao {
+            esperar(1500);
+        } senao {
             led.vermelho();
         }
     }
 }
 ```
 
-### Características da linguagem
+</td>
+<td valign="top">
 
-| Recurso | Descrição |
-|---------|-----------|
-| `dispositivo` | Declara o programa/dispositivo principal |
-| `ao botao(n)` | Define eventos associados a botões físicos |
-| `se` / `senao` | Estruturas condicionais |
-| `repetir` | Estrutura de repetição |
-| `inteiro`, `decimal`, `texto`, `booleano` | Tipos primitivos |
-| `nfc`, `ir`, `led`, `botao` | Módulos de acesso ao hardware |
-| `esperar(ms)` | Pausa a execução por N milissegundos |
-
----
-
-## 🎯 Escopo do MVP
-
-Para manter o projeto viável, o MVP foca em poucas capacidades:
-
-| Módulo | Descrição | Exemplo de uso |
-|--------|-----------|----------------|
-| **NFC/RFID** | Leitura e validação de cartões | `nfc.ler()`, `cartao.valido` |
-| **Infravermelho** | Envio/recepção de sinais IR | `ir.enviar()`, `ir.receber()` |
-| **GPIO / LED** | Controle de LEDs e pinos digitais | `led.verde()`, `led.vermelho()` |
-| **Botões** | Eventos de entrada do usuário | `ao botao(1) { ... }` |
-
-**Hardware principal:** ESP32 (DevKit v1 ou similar)
-
----
-
-## 📂 Estrutura do Projeto
-
-```
-compiladores-projeto/
-├── docs/
-│   ├── tabela-de-tokens.md       # Tabela completa de tokens da linguagem
-│   ├── exemplos-tokenizacao.md   # Exemplos de tokenização passo a passo
-│   └── especificacao-lexica.md   # Especificação léxica detalhada
-├── src/                          # Código-fonte do compilador
-│   ├── lexer/                    # Analisador léxico
-│   ├── parser/                   # Analisador sintático
-│   ├── semantic/                 # Analisador semântico
-│   └── codegen/                  # Gerador de código C++/Arduino
-├── examples/                     # Exemplos de código na linguagem
-│   └── controle_nfc.dsl
-├── output/                       # Código C++ gerado (saída do compilador)
-├── .gitignore
-└── README.md
+```cpp
+// [controle_nfc.tupa:5] ao botao(1)
+{
+  int leitura = digitalRead(BOTAO_1);
+  // ... debounce por millis() ...
+  if (botao1_estavel == LOW) {
+    Cartao cartao = nfcLer();
+    if ((cartao.valido == true)) {
+      ledVerde();
+      delay(1500);
+    } else {
+      ledVermelho();
+    }
+    ledApagar();
+  }
+}
 ```
 
----
+</td>
+</tr>
+</table>
 
-## 📚 Documentação
+Métricas reais, medidas na compilação:
 
-| Documento | Descrição |
-|-----------|-----------|
-| [Tabela de Tokens](docs/tabela-de-tokens.md) | Todos os 44 tokens da linguagem (43 + EOF) com lexemas, regex e descrições |
-| [Exemplos de Tokenização](docs/exemplos-tokenizacao.md) | 7 exemplos completos de como o lexer processa o código |
-| [Especificação Léxica](docs/especificacao-lexica.md) | Regras de reconhecimento, prioridade de padrões e tratamento de erros |
+| Programa | Linhas de código Tupã | Linhas de código C++ gerado | Razão |
+|---|---:|---:|---:|
+| `controle_nfc` | 12 | 100 | 8,3x |
+| `teste_hardware` | 23 | 112 | 4,9x |
 
----
+## Como funciona
 
-## 🚀 Fases do Compilador
+```mermaid
+flowchart LR
+    A[".tupa"] --> B["Léxico<br/>44 tokens"]
+    B --> C["Sintático<br/>descendente recursivo"]
+    C --> D["Semântico<br/>tipos, escopo, hardware"]
+    D --> E["Codegen<br/>C++/Arduino"]
+    E --> F[".ino"]
+    F --> G["arduino-cli"]
+    G --> H["ESP32"]
+```
 
-| # | Fase | Status | Descrição | Código |
-|---|------|--------|-----------|--------|
-| 1 | **Análise Léxica** | ✅ Implementada | Tokenização do código-fonte | `src/tupac/lexer.py` |
-| 2 | **Análise Sintática** | ✅ Implementada | Construção da AST a partir dos tokens | `src/tupac/parser.py` |
-| 3 | **Análise Semântica** | ✅ Implementada | Verificação de tipos, escopo e validação de hardware | `src/tupac/semantic.py` |
-| 4 | **Geração de Código** | ✅ Implementada | Transpilação da AST para C++/Arduino | `src/tupac/codegen.py` |
-| 5 | **Integração ESP32** | ⏳ Pendente | Compilação e upload para o hardware | Arduino CLI |
+- **Léxico:** 44 tipos de token (43 enviados ao parser mais `EOF`).
+- **Sintático:** parser descendente recursivo, um token de lookahead, gramática em [`docs/linguagem.md`](docs/linguagem.md).
+- **Semântico:** valida tipos, escopo, módulos e métodos, e a existência de pinos na placa.
+- **Codegen:** gera o `.ino` com comentários `[arquivo:linha]` ligando cada bloco ao `.tupa`.
+- **Gravação:** `arduino-cli` compila e grava; o compilador não depende dele para gerar o código.
 
----
+## A linguagem
 
-## 🖥️ Como usar o compilador
+Eventos:
+
+| Evento | Quando dispara |
+|---|---|
+| `ao iniciar` | uma vez, ao ligar a placa |
+| `ao botao(N)` | uma vez por aperto do botão N (com debounce) |
+| `ao obstaculo` | quando o sensor IR passa de livre para obstáculo |
+| `ao cartao` | quando um cartão novo é lido (`cartao.uid`, `cartao.valido`) |
+
+Módulos e comandos:
+
+| Módulo | Métodos |
+|---|---|
+| `nfc` | `ler()` |
+| `led` | `verde()`, `vermelho()`, `apagar()` |
+| `ir` | `detectado()` |
+| `botao` | `pressionado()` |
+| comandos | `escrever(expr);`, `esperar(ms);` |
+
+Os erros são didáticos. Trocando `led.verde()` por `led.roxo()`:
+
+```
+erro semantico - linha 3, coluna 12
+    metodo inexistente no modulo 'led'
+    disponiveis: verde(), vermelho(), apagar()
+    led.roxo()
+
+compilacao interrompida: 1 erro
+```
+
+Referência completa: [`docs/linguagem.md`](docs/linguagem.md) e [`docs/tabela-de-tokens.md`](docs/tabela-de-tokens.md).
+
+## Hardware
+
+- ESP32-WROVER-DEV
+- Leitor NFC RC522
+- Sensor IR de obstáculo
+- Botão
+- 2 LEDs (verde e vermelho)
+
+Custo aproximado: **R$ 120**.
+
+Pinagem (arquivo de placa [`compilador/placas/esp32_wrover.json`](compilador/placas/esp32_wrover.json)):
+
+| Função | GPIO |
+|---|---:|
+| RC522 SS | 5 |
+| RC522 RST | 22 |
+| SPI SCK | 18 |
+| SPI MISO | 19 |
+| SPI MOSI | 23 |
+| LED verde | 25 |
+| LED vermelho | 26 |
+| Sensor IR | 34 |
+| Botão 1 | 4 |
+
+Detalhes e ligações em [`firmware/pinagem.md`](firmware/pinagem.md).
+
+## Começando
+
+Requisitos: Python 3.9 ou superior.
 
 ```bash
-# Análise léxica — lista os tokens
-python -m compilador tokens examples/controle_nfc.tupa
+pip install -e .
 
-# Análise sintática — imprime a AST
-python -m compilador ast examples/controle_nfc.tupa
-
-# Compilar (back-end) — grava <pasta>/<pasta>.ino (formato que o arduino-cli exige)
-python -m compilador build examples/controle_nfc.tupa -o firmware/controle_nfc_gerado
-python -m compilador build examples/teste_hardware.tupa -o firmware/teste_hardware_gerado
-#   --placa esp32_wrover   placa-alvo (padrão); lê compilador/placas/<nome>.json ou um caminho .json
-
-# Testes automatizados (compilador + API web)
-python -m pytest tests -q
+tupa build examples/controle_nfc.tupa -o firmware/controle_nfc_gerado   # gera o .ino
+tupa tokens examples/controle_nfc.tupa                                  # lista os tokens
+tupa ast examples/controle_nfc.tupa                                     # imprime a AST
 ```
 
-### Hardware real e placa
+Sem instalar, use `python -m compilador build|tokens|ast ...`.
 
-O protótipo é um **ESP32-WROVER-DEV** (placa "ESP32 Wrover Module", FQBN `esp32:esp32:esp32wrover`),
-com RC522 (biblioteca MFRC522), botão, LEDs verde/vermelho e sensor IR de obstáculo. A pinagem conferida em
-bancada está em [`firmware/pinagem.md`](firmware/pinagem.md) e em `compilador/placas/esp32_wrover.json`
-(o compilador lê os pinos e a lista de UIDs autorizados desse arquivo).
-
-### Instalar o arduino-cli, o core ESP32 e a biblioteca
+Para compilar e gravar, instale o `arduino-cli`, o core ESP32 e a biblioteca MFRC522:
 
 ```bash
-# Windows (sem admin): baixe arduino-cli_<versao>_Windows_64bit.zip em
-# https://github.com/arduino/arduino-cli/releases e coloque o arduino-cli.exe no PATH.
-# Ou: winget install ArduinoSA.CLI   |   choco install arduino-cli
-
 arduino-cli config init
 arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
 arduino-cli core update-index
-arduino-cli core install esp32:esp32        # ~ 1 GB; testado com esp32:esp32 3.3.12
-arduino-cli lib install MFRC522             # testado com 1.4.12
-```
+arduino-cli core install esp32:esp32
+arduino-cli lib install MFRC522
 
-### Compilar e gravar na placa
-
-```bash
-# compilar (valida o .ino sem a placa)
-arduino-cli compile --fqbn esp32:esp32:esp32wrover firmware/controle_nfc_gerado
-arduino-cli compile --fqbn esp32:esp32:esp32wrover firmware/teste_hardware_gerado
-
-# descobrir a porta e gravar
 arduino-cli board list
+arduino-cli compile --fqbn esp32:esp32:esp32wrover firmware/controle_nfc_gerado
 arduino-cli upload -p COMx --fqbn esp32:esp32:esp32wrover firmware/controle_nfc_gerado
-
-# acompanhar o Serial (115200)
-arduino-cli monitor -p COMx -c baudrate=115200
 ```
 
-O firmware manual `firmware/teste_hardware.ino` também compila: copie-o para uma pasta `teste_hardware/`
-(o arduino-cli exige pasta com o mesmo nome do `.ino`) e rode o mesmo `compile`.
-
-Fases documentadas em [`docs/analise-sintatica-ast.md`](docs/analise-sintatica-ast.md) e [`docs/analise-semantica-e-codegen.md`](docs/analise-semantica-e-codegen.md).
-
----
-
-## 🌐 Playground web
-
-Editor online do Tupã (CodeMirror 6 + React) com abas de **Tokens**, **AST**, **Erros** (clique leva à linha e sublinha o trecho), **C++ gerado** (copiar / baixar `.ino`) e **Métricas** (linhas Tupã vs C++, valores reais medidos na compilação). Atalho: `Ctrl+Enter` compila.
-
-- **Backend:** FastAPI em `web/api/`, importa o pacote `compilador` (sem duplicar lógica). Não executa `arduino-cli`.
-  - `POST /api/compilar` `{codigo}` → `{tokens, ast, erros, cpp, metricas}` (limite 20 KB, timeout 5 s)
-  - `GET /api/exemplos`, `GET /api/linguagem` (palavras-chave do lexer), `GET /api/saude`
-- **Frontend:** Vite + React em `web/app/`; o build estático (`web/app/dist`) é servido pelo próprio FastAPI.
-
-**Com Docker** (mesma imagem do deploy):
+## Playground local
 
 ```bash
-docker compose up --build        # http://127.0.0.1:8000
+docker compose up --build
 ```
 
-O serviço `tupa` escuta só em `127.0.0.1:8000` (publicar via proxy reverso no VPS), roda como usuário não root e tem healthcheck em `/api/saude`.
+Abra http://localhost:8000. O serviço escuta só em `127.0.0.1:8000`, roda sem root e tem healthcheck em `/api/saude`.
 
-**Desenvolvimento local:**
+Sem Docker:
 
 ```bash
 pip install -r requirements-web.txt
-uvicorn web.api.main:app --reload            # API em :8000
-cd web/app && npm install && npm run dev     # front em :5173 (proxy /api -> :8000)
-python -m pytest tests -q                    # inclui tests/test_web_api.py
+uvicorn web.api.main:app --reload
 ```
 
-Variáveis opcionais: `TUPA_LIMITE_BYTES`, `TUPA_TIMEOUT_S`, `TUPA_EXEMPLOS_DIR`, `TUPA_STATIC_DIR`.
+## Testes
 
----
+```bash
+python -m pytest tests -q
+```
 
-## 🛠️ Tecnologias
+50 testes (compilador e API web).
 
-| Componente | Tecnologia |
-|------------|------------|
-| Compilador | Python |
-| Hardware | ESP32 (DevKit v1) |
-| Código gerado | C++ / Arduino |
-| Toolchain de upload | Arduino CLI / PlatformIO |
-| Módulos de hardware | MFRC522 (NFC), IR receiver/sender, LEDs, botões |
+## Estrutura de pastas
 
----
+```
+.
+├── compilador/        # lexer, parser, semântico, codegen, CLI
+│   └── placas/        # arquivos de placa (pinos, FQBN, UIDs)
+├── examples/          # programas .tupa
+├── firmware/          # .ino gerados e manuais, pinagem
+├── web/
+│   ├── api/           # FastAPI do playground
+│   └── app/           # front React + CodeMirror
+├── tests/             # pytest
+├── docs/              # especificação, gramática, tokens, pitch
+├── artigo/            # artigo IEEE (LaTeX e PDF) e figuras
+├── Dockerfile
+├── docker-compose.yml
+├── deploy-git.ps1
+├── REGISTRO.md        # diário de decisões
+└── PROMPTS.md
+```
 
-## 👥 Equipe
+## Artigo e apresentação
 
-Projeto desenvolvido para a disciplina de Compiladores.
+- Artigo: [`artigo/main.pdf`](artigo/main.pdf)
+- Apresentação (pitch): [`docs/Tupa-Pitch.pdf`](docs/Tupa-Pitch.pdf)
 
----
+## Autores
 
-## 📄 Licença
+Michel Lutegar, André Costa, Felipe Dutrain e Guilherme Lopes.
 
-Projeto acadêmico — uso educacional.
+Disciplina Linguagens Formais e Compiladores, IBMEC.
+
+## Licença
+
+Licença: a definir.
