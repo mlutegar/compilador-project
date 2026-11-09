@@ -4,6 +4,7 @@ Uso:
     tupa build <arquivo.tupa> [-o pasta] [--placa p]  # gera <pasta>/<pasta>.ino
     tupa tokens <arquivo.tupa>                 # lista os tokens (análise léxica)
     tupa ast <arquivo.tupa>                    # imprime a AST (análise sintática)
+    tupa simbolos <arquivo.tupa>               # tabela de símbolos (análise semântica)
 """
 
 import argparse
@@ -12,7 +13,7 @@ import sys
 
 from .lexer import tokenizar
 from .parser import parsear
-from .semantic import analisar
+from .semantic import analisar, tabela_de_simbolos, formatar_simbolos
 from .codegen import gerar_ino
 from .astprint import render_programa
 from .errors import TupaError
@@ -62,6 +63,12 @@ def _cmd_ast(args):
     return 0
 
 
+def _cmd_simbolos(args):
+    ast = parsear(tokenizar(_ler(args.arquivo)))
+    print(formatar_simbolos(tabela_de_simbolos(ast, carregar_placa(args.placa))))
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="tupa", description="Compilador da linguagem Tupã (DSL -> C++/Arduino).")
     sub = p.add_subparsers(dest="comando", required=True)
@@ -81,6 +88,11 @@ def build_parser():
     a = sub.add_parser("ast", help="mostra a AST (análise sintática)")
     a.add_argument("arquivo")
     a.set_defaults(func=_cmd_ast)
+
+    y = sub.add_parser("simbolos", help="mostra a tabela de símbolos (análise semântica)")
+    y.add_argument("arquivo")
+    y.add_argument("--placa", default=PLACA_PADRAO)
+    y.set_defaults(func=_cmd_simbolos)
     return p
 
 
@@ -99,10 +111,10 @@ def main(argv=None):
         print("compilacao interrompida: 1 erro", file=sys.stderr)
         return 1
     except ErroPlaca as e:
-        print(f"erro de placa: {e}", file=sys.stderr)
+        print(f"erro de placa [{e.codigo}]: {e}", file=sys.stderr)
         return 2
     except FileNotFoundError:
-        print(f"arquivo não encontrado: {args.arquivo}", file=sys.stderr)
+        print(f"erro de arquivo [G05]: arquivo não encontrado: {args.arquivo}", file=sys.stderr)
         return 2
 
 

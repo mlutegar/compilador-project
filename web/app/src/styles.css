@@ -78,3 +78,11 @@ footer a { color: inherit; text-decoration: underline; }
   .painel-editor .editor { min-height: 320px; }
   .painel-saida { min-height: 420px; }
 }
+
+.selo-codigo { display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 700; color: #1d1214; background: var(--erro); border-radius: 4px; padding: 1px 8px; margin-bottom: 6px; }
+.tabela-erros { margin-top: 16px; font-size: 13px; color: var(--mudo); }
+.tabela-erros summary { cursor: pointer; color: inherit; margin-bottom: 8px; }
+.tabela-erros table { width: 100%; border-collapse: collapse; }
+.tabela-erros th, .tabela-erros td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid #2a2f3a; }
+.tabela-erros code { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; }
+.tabela-erros tr.atual { background: #1d1214; }

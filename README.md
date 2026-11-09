@@ -132,13 +132,15 @@ Módulos e comandos:
 Os erros são didáticos. Trocando `led.verde()` por `led.roxo()`:
 
 ```
-erro semantico - linha 3, coluna 12
+erro semantico [E19] - linha 3, coluna 12
     metodo inexistente no modulo 'led'
     disponiveis: verde(), vermelho(), apagar()
     led.roxo()
 
 compilacao interrompida: 1 erro
 ```
+
+Cada erro tem um código estável (L, S, E, G) listado em [`docs/tabela-de-erros.md`](docs/tabela-de-erros.md).
 
 Referência completa: [`docs/linguagem.md`](docs/linguagem.md) e [`docs/tabela-de-tokens.md`](docs/tabela-de-tokens.md).
 
@@ -178,6 +180,7 @@ pip install -e .
 tupa build examples/controle_nfc.tupa -o firmware/controle_nfc_gerado   # gera o .ino
 tupa tokens examples/controle_nfc.tupa                                  # lista os tokens
 tupa ast examples/controle_nfc.tupa                                     # imprime a AST
+tupa simbolos examples/controle_nfc.tupa                                # tabela de símbolos
 ```
 
 Sem instalar, use `python -m compilador build|tokens|ast ...`.
@@ -217,7 +220,16 @@ uvicorn web.api.main:app --reload
 python -m pytest tests -q
 ```
 
-50 testes (compilador e API web).
+98 testes (compilador, API web e tabela de erros).
+
+## Documentação
+
+- [`docs/CONTEXTO.md`](docs/CONTEXTO.md): estado real do projeto
+- [`docs/linguagem.md`](docs/linguagem.md): a linguagem e a gramática
+- [`docs/tabela-de-tokens.md`](docs/tabela-de-tokens.md): os 44 tokens
+- [`docs/analise-semantica.md`](docs/analise-semantica.md): o que a fase semântica verifica, estruturas e tabela de símbolos
+- [`docs/tabela-de-erros.md`](docs/tabela-de-erros.md): todos os erros, com código, exemplo mínimo e correção
+- [`docs/compilacao.md`](docs/compilacao.md): evidência do código compilando com `arduino-cli` (flash e RAM)
 
 ## Estrutura de pastas
 
@@ -231,6 +243,7 @@ python -m pytest tests -q
 │   ├── api/           # FastAPI do playground
 │   └── app/           # front React + CodeMirror
 ├── tests/             # pytest
+├── tools/             # gerador da tabela de erros
 ├── docs/              # especificação, gramática, tokens, pitch
 ├── artigo/            # artigo IEEE (LaTeX e PDF) e figuras
 ├── Dockerfile

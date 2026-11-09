@@ -7,6 +7,13 @@ from . import ast_nodes as A
 from .tokens import TIPOS
 from .errors import ErroSintatico
 
+# Código de erro por descrição do que era esperado (docs/tabela-de-erros.md).
+CODIGOS_ESPERADO = {
+    "'dispositivo'": "S01", "nome do dispositivo": "S02", "'{'": "S03", "'}'": "S04",
+    "'('": "S05", "número do botão": "S06", "')'": "S07", "nome da variável": "S08",
+    "';'": "S09", "nome do membro": "S10",
+}
+
 
 class Parser:
     def __init__(self, tokens):
@@ -37,7 +44,8 @@ class Parser:
             return self._avanca()
         tok = self.atual
         raise ErroSintatico(
-            f"esperado {descricao}, encontrado {tok.lexema!r}", tok.linha, tok.coluna
+            f"esperado {descricao}, encontrado {tok.lexema!r}", tok.linha, tok.coluna,
+            codigo=CODIGOS_ESPERADO.get(descricao, "S99"),
         )
 
     # ---------- ponto de entrada ----------
@@ -47,7 +55,7 @@ class Parser:
             tok = self.atual
             raise ErroSintatico(
                 f"código inesperado após o fim do programa: {tok.lexema!r}",
-                tok.linha, tok.coluna,
+                tok.linha, tok.coluna, codigo="S13",
             )
         return prog
 
@@ -83,6 +91,7 @@ class Parser:
             raise ErroSintatico(
                 f"esperado nome do evento (botao, iniciar, obstaculo, cartao), "
                 f"encontrado {self.atual.lexema!r}", self.atual.linha, self.atual.coluna,
+                codigo="S11",
             )
         nome = self._avanca().lexema
         corpo = self._bloco()
@@ -279,7 +288,8 @@ class Parser:
             self._espera("TK_FECHA_PAR", "')'")
             return no
         raise ErroSintatico(
-            f"expressão esperada, encontrado {tok.lexema!r}", tok.linha, tok.coluna
+            f"expressão esperada, encontrado {tok.lexema!r}", tok.linha, tok.coluna,
+            codigo="S12",
         )
 
 

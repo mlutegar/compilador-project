@@ -82,3 +82,17 @@ def test_linguagem_expoe_escrever_para_o_realce():
 def test_limite_de_tamanho():
     r = client.post("/api/compilar", json={"codigo": "a" * (LIMITE_BYTES + 1)})
     assert r.status_code == 413
+
+
+def test_erro_traz_codigo():
+    d = client.post("/api/compilar", json={"codigo": VALIDO.replace("led.verde()", "led.roxo()")}).json()
+    assert d["erros"][0]["codigo"] == "E19"
+    assert "[E19]" in d["erros"][0]["texto"]
+    d = client.post("/api/compilar", json={"codigo": "dispositivo x { @ }"}).json()
+    assert d["erros"][0]["codigo"] == "L01"
+
+
+def test_api_erros_lista_catalogo():
+    itens = client.get("/api/erros").json()["erros"]
+    assert {"L01", "S01", "E01", "G01"} <= {i["codigo"] for i in itens}
+    assert all({"codigo", "fase", "condicao", "mensagem", "exemplo", "correcao"} <= set(i) for i in itens)

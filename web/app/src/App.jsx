@@ -197,15 +197,38 @@ function Tokens({ tokens }) {
 }
 
 function Erros({ erros, aoClicar }) {
-  if (!erros.length) return <p className="ok">✓ Nenhum erro.</p>;
+  const [tabela, setTabela] = useState(null);
+  useEffect(() => {
+    fetch("/api/erros").then((r) => r.json()).then((d) => setTabela(d.erros)).catch(() => setTabela([]));
+  }, []);
   return (
     <div>
+      {!erros.length && <p className="ok">✓ Nenhum erro.</p>}
       {erros.map((e, i) => (
         <button key={i} className="erro" onClick={() => aoClicar(e)} title="Ir para a linha no editor">
+          {e.codigo && <span className="selo-codigo">{e.codigo}</span>}
           <pre>{e.texto}</pre>
         </button>
       ))}
-      <p className="dica">Clique no erro para ir à linha no editor.</p>
+      {erros.length > 0 && <p className="dica">Clique no erro para ir à linha no editor.</p>}
+      <details className="tabela-erros">
+        <summary>Tabela de erros ({tabela ? tabela.length : "..."} códigos)</summary>
+        {tabela && (
+          <table>
+            <thead><tr><th>Código</th><th>Fase</th><th>Mensagem</th><th>Como corrigir</th></tr></thead>
+            <tbody>
+              {tabela.map((t) => (
+                <tr key={t.codigo} className={erros.some((e) => e.codigo === t.codigo) ? "atual" : ""}>
+                  <td><b>{t.codigo}</b></td>
+                  <td>{t.fase}</td>
+                  <td><code>{t.mensagem}</code></td>
+                  <td>{t.correcao}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </details>
     </div>
   );
 }

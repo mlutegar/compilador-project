@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from compilador import __version__
 from compilador.codegen import gerar_ino
+from compilador.catalogo_erros import publico as catalogo_publico
 from compilador.errors import TupaError
 from compilador.lexer import tokenizar
 from compilador.parser import parsear
@@ -90,6 +91,12 @@ def exemplos():
 def linguagem():
     """Palavras-chave reais do lexer (para o destaque de sintaxe do editor)."""
     return {"palavras": PALAVRAS_RESERVADAS, "comentario": "#"}
+
+
+@app.get("/api/erros")
+def erros():
+    """Catálogo de erros (mesma fonte de docs/tabela-de-erros.md)."""
+    return {"erros": catalogo_publico()}
 
 
 @app.get("/api/saude")

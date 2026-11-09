@@ -126,3 +126,22 @@ Diário de decisões e mudanças.
 - Os números oficiais batem com o repositório. As cores do prompt (#FF7A1A, #2EE6A6) diferem em 2 unidades das do pitch (#FF7A18, #2EE6A8); usei as do prompt.
 - `docs/Tupa-Pitch.pdf` está protegido por senha e não abriu; a identidade visual veio de `gerar-pitch.js` e da marca no Obsidian.
 - % TODO (placa): o `.ino` gerado ainda pode não ter sido gravado na placa; o aviso está só nas notas dos slides 8 e 11 e no `roteiro.md`.
+
+---
+
+## P14 · Análise semântica, tabela de erros e compilação (08/11/2026) · concluído
+
+**Resultado**
+- Códigos de erro estáveis, sem mudar o texto das mensagens: L01; S01 a S13; E01 a E21 (E06 e E15 são defesas internas); G01 a G05 (placa e arquivo). `codegen.py` não emite erro.
+- `TupaError` e `ErroPlaca` têm `codigo`. CLI: `erro semantico [E19] - linha 3, coluna 12` e `erro de placa [G01]: ...`. API: campo `codigo` em cada erro e `GET /api/erros`. Site: selo do código e tabela recolhível na aba Erros.
+- Mudança visível: o cabeçalho do erro ganhou o código entre colchetes. Slides em `apresentacao/` e notas do Obsidian ainda mostram o formato antigo (sem código).
+- `compilador/catalogo_erros.py` é a fonte única; `tools/gerar_tabela_erros.py` gera `docs/tabela-de-erros.md`.
+- Tabela de símbolos: `AnalisadorSemantico.simbolos` e comando `tupa simbolos`.
+- Docs novos: `docs/analise-semantica.md`, `docs/tabela-de-erros.md`, `docs/compilacao.md`; README com seção "Documentação".
+- `tests/test_erros.py`: um teste por erro (o exemplo gera aquele código e mensagem), tabela sincronizada com o catálogo, todo código do fonte está no catálogo. Total: 98 passed. Build do front sem erro.
+- Compilação real com arduino-cli 1.5.1, core esp32 3.3.12, MFRC522 1.4.12: 4 sketches compilam (gerados de controle_nfc e teste_hardware, mais os 2 manuais), cerca de 293 KB de flash (22%) e 22 KB de RAM (6%). O pedido falava em 3 sketches; há 4 em `firmware/`, registrei os 4.
+
+**Avisos**
+- `arduino-cli` não está no PATH; fica em `C:/Users/mlute/arduino-cli-bin/`.
+- P08 e P15 não têm registro: ficaram como "sem registro" e "pendente" no `PROMPTS.md`.
+- Falta gravar o `.ino` gerado na placa e conferir o site no navegador (só o build foi feito).

@@ -63,8 +63,7 @@ def tokenizar(codigo, incluir_ignorados=False):
             trecho = codigo[pos:m.start()]
             col = pos - inicio_linha + 1
             raise ErroLexico(
-                f"caractere inesperado: {trecho.strip()!r}", linha, col
-            )
+                f"caractere inesperado: {trecho.strip()!r}", linha, col, codigo="L01")
         pos = m.end()
 
         tipo = m.lastgroup
@@ -104,7 +103,7 @@ def tokenizar(codigo, incluir_ignorados=False):
     # Caractere inesperado no final?
     if pos != len(codigo):
         col = pos - inicio_linha + 1
-        raise ErroLexico(f"caractere inesperado: {codigo[pos:].strip()!r}", linha, col)
+        raise ErroLexico(f"caractere inesperado: {codigo[pos:].strip()!r}", linha, col, codigo="L01")
 
     tokens.append(Token("TK_EOF", "", linha, 1))
     return tokens

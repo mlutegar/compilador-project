@@ -6,15 +6,16 @@ class TupaError(Exception):
 
     fase = "erro"
 
-    def __init__(self, mensagem, linha=None, coluna=None, trecho=None):
+    def __init__(self, mensagem, linha=None, coluna=None, trecho=None, codigo=None):
         self.mensagem = mensagem
+        self.codigo = codigo
         self.linha = linha
         self.coluna = coluna
         self.trecho = trecho
         super().__init__(self.formatar())
 
     def to_dict(self):
-        return {"fase": self.fase, "mensagem": self.mensagem, "linha": self.linha,
+        return {"codigo": self.codigo, "fase": self.fase, "mensagem": self.mensagem, "linha": self.linha,
                 "coluna": self.coluna, "trecho": self.trecho,
                 "texto": self.formatar()}
 
@@ -24,7 +25,8 @@ class TupaError(Exception):
             pos = f" - linha {self.linha}"
             if self.coluna is not None:
                 pos += f", coluna {self.coluna}"
-        texto = f"{self.fase}{pos}\n    {self.mensagem}"
+        cod = f" [{self.codigo}]" if self.codigo else ""
+        texto = f"{self.fase}{cod}{pos}\n    {self.mensagem}"
         if self.trecho:
             texto += f"\n    {self.trecho}"
         return texto

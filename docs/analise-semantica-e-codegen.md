@@ -9,6 +9,8 @@ Documenta as **fases 3 e 4** do compilador Tupã.
 
 ## Análise Semântica
 
+> Documentação completa (tabela de símbolos, ordem das verificações, erros E01 a E21): [`analise-semantica.md`](analise-semantica.md) e [`tabela-de-erros.md`](tabela-de-erros.md).
+
 Percorre a AST validando:
 
 1. **Variáveis** declaradas antes do uso (atribuição implícita cria a variável, ex.: `cartao = nfc.ler();`).
@@ -33,7 +35,7 @@ Dentro de `ao cartao` a variável `cartao` já existe.
 ```
 $ python -m compilador build erro.tupa
 
-erro semantico - linha 3, coluna 12
+erro semantico [E19] - linha 3, coluna 12
     metodo inexistente no modulo 'led'
     disponiveis: verde(), vermelho(), apagar()
     led.roxo()

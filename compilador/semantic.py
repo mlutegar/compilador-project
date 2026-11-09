@@ -51,17 +51,23 @@ class AnalisadorSemantico:
         self.placa = placa or carregar_placa()
         # pilha de escopos: nome -> tipo
         self.escopos = [{}]
+        self.nomes_escopo = ["global"]   # rótulo de cada escopo da pilha
+        self.simbolos = []               # registro permanente: (nome, tipo, escopo, linha, coluna)
         self.eventos_vistos = {}   # chave do evento -> linha da 1ª declaração
 
     # ---------- escopo ----------
-    def _push(self):
+    def _push(self, rotulo=None):
         self.escopos.append({})
+        self.nomes_escopo.append(rotulo or self.nomes_escopo[-1])
 
     def _pop(self):
         self.escopos.pop()
+        self.nomes_escopo.pop()
 
     def _declarar(self, nome, tipo, no):
         self.escopos[-1][nome] = tipo
+        self.simbolos.append({"nome": nome, "tipo": tipo, "escopo": self.nomes_escopo[-1],
+                              "linha": getattr(no, "linha", None), "coluna": getattr(no, "coluna", None)})
 
     def _tipo_de(self, nome):
         for escopo in reversed(self.escopos):
@@ -93,15 +99,13 @@ class AnalisadorSemantico:
             if nome == "obstaculo" and "ir" not in self.placa.pinos:
                 raise ErroSemantico(
                     f"a placa '{self.placa.nome}' não tem sensor IR configurado",
-                    no.linha, no.coluna, rotulo,
-                )
+                    no.linha, no.coluna, rotulo, codigo="E01")
         else:
             raise ErroSemantico(
                 f"evento desconhecido: 'ao {nome}'\n"
                 f"    eventos disponiveis: ao iniciar, ao botao(N), ao obstaculo, ao cartao",
-                no.linha, no.coluna, f"ao {nome}",
-            )
-        self._push()
+                no.linha, no.coluna, f"ao {nome}", codigo="E02")
+        self._push(rotulo if nome == "botao" or nome in EVENTOS_SEM_ARGUMENTO else nome)
         if nome == "cartao":
             # dentro de 'ao cartao' existe a variável 'cartao', já lida pelo leitor
             self._declarar("cartao", "cartao", no)
@@ -112,8 +116,7 @@ class AnalisadorSemantico:
     def _valida_botao(self, no, rotulo):
         if no.numero < 1:
             raise ErroSemantico(
-                f"número de botão inválido: {no.numero}", no.linha, no.coluna, rotulo
-            )
+                f"número de botão inválido: {no.numero}", no.linha, no.coluna, rotulo, codigo="E03")
         if no.numero not in self.placa.botoes:
             disp = ", ".join(str(n) for n in sorted(self.placa.botoes)) or "nenhum"
             raise ErroSemantico(
@@ -121,16 +124,14 @@ class AnalisadorSemantico:
                 f"    botoes com pino: {disp}\n"
                 f"    para usar o botao {no.numero}, ligue-o a um GPIO e declare em "
                 f'"pinos.botoes" de compilador/placas/{self.placa.nome}.json',
-                no.linha, no.coluna, rotulo,
-            )
+                no.linha, no.coluna, rotulo, codigo="E04")
 
     def _registra_evento(self, no, chave, rotulo):
         if chave in self.eventos_vistos:
             raise ErroSemantico(
                 f"o evento '{rotulo}' já foi declarado na linha {self.eventos_vistos[chave]}\n"
                 f"    junte os dois blocos em um só",
-                no.linha, no.coluna, rotulo,
-            )
+                no.linha, no.coluna, rotulo, codigo="E05")
         self.eventos_vistos[chave] = no.linha
 
     # ---------- comandos ----------
@@ -155,28 +156,25 @@ class AnalisadorSemantico:
             self._expr(no.expr)
         else:
             raise ErroSemantico(f"comando desconhecido: {type(no).__name__}",
-                                getattr(no, "linha", None), getattr(no, "coluna", None))
+                                getattr(no, "linha", None), getattr(no, "coluna", None), codigo="E06")
 
     def _escrever(self, no: A.Escrever):
         t = self._expr(no.valor)
         if t in ("vazio", "metodo"):
             raise ErroSemantico(
                 "'escrever' precisa de um valor para imprimir, mas esta chamada não devolve nada",
-                no.linha, no.coluna, "escrever(...)",
-            )
+                no.linha, no.coluna, "escrever(...)", codigo="E07")
         if t in TIPOS_OBJETO:
             props = ", ".join(f"{t}.{p}" for p in sorted(TIPOS_OBJETO[t]))
             raise ErroSemantico(
                 f"'escrever' não imprime um '{t}' inteiro, escolha uma propriedade\n"
                 f"    por exemplo: escrever({t}.uid);  propriedades: {props}",
-                no.linha, no.coluna, "escrever(...)",
-            )
+                no.linha, no.coluna, "escrever(...)", codigo="E08")
 
     def _decl(self, no: A.DeclVar):
         if no.nome in self.escopos[-1]:
             raise ErroSemantico(
-                f"variável '{no.nome}' já declarada neste escopo", no.linha, no.coluna
-            )
+                f"variável '{no.nome}' já declarada neste escopo", no.linha, no.coluna, codigo="E09")
         tipo_decl = {"inteiro": "inteiro", "decimal": "decimal",
                      "texto": "texto", "booleano": "booleano"}[no.tipo]
         if no.valor is not None:
@@ -197,15 +195,14 @@ class AnalisadorSemantico:
         elif isinstance(alvo, A.AcessoMembro):
             self._expr(alvo)  # valida o acesso
         else:
-            raise ErroSemantico("alvo de atribuição inválido", no.linha, no.coluna)
+            raise ErroSemantico("alvo de atribuição inválido", no.linha, no.coluna, codigo="E10")
 
     def _se(self, no: A.Se):
         t = self._expr(no.condicao)
         if t not in ("booleano", "desconhecido"):
             raise ErroSemantico(
                 f"condição do 'se' deve ser booleana, e não '{t}'",
-                no.linha, no.coluna,
-            )
+                no.linha, no.coluna, codigo="E11")
         self._push()
         for c in no.entao:
             self._comando(c)
@@ -234,19 +231,17 @@ class AnalisadorSemantico:
             if t is None:
                 raise ErroSemantico(
                     f"variável '{no.nome}' usada sem ser declarada",
-                    no.linha, no.coluna, no.nome,
-                )
+                    no.linha, no.coluna, no.nome, codigo="E12")
             return t
         if isinstance(no, A.Hardware):
             # hardware "solto" (ex.: passar como valor) não é permitido
             raise ErroSemantico(
                 f"módulo '{no.nome}' precisa de um método, ex.: {no.nome}.algo()",
-                no.linha, no.coluna,
-            )
+                no.linha, no.coluna, codigo="E13")
         if isinstance(no, A.Unaria):
             t = self._expr(no.operando)
             if no.op == "!" and t not in ("booleano", "desconhecido"):
-                raise ErroSemantico("'!' exige valor booleano", no.linha, no.coluna)
+                raise ErroSemantico("'!' exige valor booleano", no.linha, no.coluna, codigo="E14")
             return "booleano" if no.op == "!" else t
         if isinstance(no, A.Binaria):
             return self._binaria(no)
@@ -255,7 +250,7 @@ class AnalisadorSemantico:
         if isinstance(no, A.Chamada):
             return self._chamada(no)
         raise ErroSemantico(f"expressão desconhecida: {type(no).__name__}",
-                            getattr(no, "linha", None), getattr(no, "coluna", None))
+                            getattr(no, "linha", None), getattr(no, "coluna", None), codigo="E15")
 
     def _binaria(self, no: A.Binaria):
         te = self._expr(no.esq)
@@ -292,11 +287,9 @@ class AnalisadorSemantico:
             raise ErroSemantico(
                 f"propriedade inexistente no tipo '{tbase}': '{no.membro}'\n"
                 f"    disponiveis: {disp}",
-                no.linha, no.coluna, f".{no.membro}",
-            )
+                no.linha, no.coluna, f".{no.membro}", codigo="E16")
         raise ErroSemantico(
-            f"'{no.membro}' não é acessível neste valor", no.linha, no.coluna
-        )
+            f"'{no.membro}' não é acessível neste valor", no.linha, no.coluna, codigo="E17")
 
     def _chamada(self, no: A.Chamada):
         alvo = no.alvo
@@ -312,8 +305,7 @@ class AnalisadorSemantico:
                 raise ErroSemantico(
                     f"'{modulo}.{metodo}()' espera {n_esperado} argumento(s), "
                     f"recebeu {len(no.args)}",
-                    no.linha, no.coluna,
-                )
+                    no.linha, no.coluna, codigo="E18")
             for a in no.args:
                 self._expr(a)
             return retorno
@@ -331,14 +323,12 @@ class AnalisadorSemantico:
                     "nao existe IR TX nem controle remoto")
         raise ErroSemantico(
             f"metodo inexistente no modulo '{modulo}'\n    disponiveis: {disp}{dica}",
-            no.linha, no.coluna, f"{modulo}.{membro}()",
-        )
+            no.linha, no.coluna, f"{modulo}.{membro}()", codigo="E19")
 
     def _exige_numerico(self, tipo, contexto, no):
         if tipo not in ("inteiro", "decimal", "desconhecido"):
             raise ErroSemantico(
-                f"'{contexto}' exige um número, e não '{tipo}'", no.linha, no.coluna
-            )
+                f"'{contexto}' exige um número, e não '{tipo}'", no.linha, no.coluna, codigo="E20")
 
     def _checa_atribuicao(self, destino, origem, no):
         if origem == "desconhecido":
@@ -352,9 +342,22 @@ class AnalisadorSemantico:
         if destino in compat and origem not in compat[destino]:
             raise ErroSemantico(
                 f"não é possível atribuir '{origem}' a uma variável '{destino}'",
-                no.linha, no.coluna,
-            )
+                no.linha, no.coluna, codigo="E21")
 
 
 def analisar(programa, placa=None):
     return AnalisadorSemantico(placa).analisar(programa)
+
+
+def tabela_de_simbolos(programa, placa=None):
+    """Roda a análise e devolve a tabela de símbolos (lista de dicts)."""
+    a = AnalisadorSemantico(placa)
+    a.analisar(programa)
+    return a.simbolos
+
+
+def formatar_simbolos(simbolos):
+    linhas = [f"{'nome':<12} {'tipo':<10} {'escopo':<16} linha:coluna"]
+    for s in simbolos:
+        linhas.append(f"{s['nome']:<12} {s['tipo']:<10} {s['escopo']:<16} {s['linha']}:{s['coluna']}")
+    return "\n".join(linhas)

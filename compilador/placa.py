@@ -16,6 +16,14 @@ _DIR_PLACAS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "placas")
 class ErroPlaca(Exception):
     """Placa inexistente ou arquivo de placa inválido."""
 
+    def __init__(self, mensagem, codigo=None):
+        super().__init__(mensagem)
+        self.mensagem = mensagem
+        self.codigo = codigo
+
+    def to_dict(self):
+        return {"codigo": self.codigo, "fase": "erro de placa", "mensagem": self.mensagem}
+
 
 @dataclass
 class Placa:
@@ -38,9 +46,9 @@ def _uid_para_bytes(texto):
     try:
         bs = [int(p, 16) for p in texto.split()]
     except ValueError:
-        raise ErroPlaca(f"UID inválido na placa: {texto!r} (use bytes em hexadecimal, ex.: '33 7A 87 F7')")
+        raise ErroPlaca(f"UID inválido na placa: {texto!r} (use bytes em hexadecimal, ex.: '33 7A 87 F7')", "G02")
     if len(bs) not in (4, 7, 10) or any(not 0 <= b <= 255 for b in bs):
-        raise ErroPlaca(f"UID inválido na placa: {texto!r} (um UID tem 4, 7 ou 10 bytes)")
+        raise ErroPlaca(f"UID inválido na placa: {texto!r} (um UID tem 4, 7 ou 10 bytes)", "G03")
     return bs
 
 
@@ -57,7 +65,8 @@ def carregar_placa(nome=None):
         caminho = os.path.join(_DIR_PLACAS, nome + ".json")
     if not os.path.isfile(caminho):
         raise ErroPlaca(
-            f"placa '{nome}' não encontrada. Disponíveis: {', '.join(placas_disponiveis())}"
+            f"placa '{nome}' não encontrada. Disponíveis: {', '.join(placas_disponiveis())}",
+            "G01",
         )
     with open(caminho, "r", encoding="utf-8") as f:
         d = json.load(f)
@@ -70,4 +79,4 @@ def carregar_placa(nome=None):
             uids_autorizados=[_uid_para_bytes(u) for u in d["nfc"].get("uids_autorizados", [])],
         )
     except KeyError as e:
-        raise ErroPlaca(f"arquivo de placa '{caminho}' sem o campo {e}")
+        raise ErroPlaca(f"arquivo de placa '{caminho}' sem o campo {e}", "G04")
