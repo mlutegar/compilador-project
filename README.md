@@ -253,4 +253,4 @@ Disciplina Linguagens Formais e Compiladores, IBMEC.
 
 ## Licença
 
-Licença: a definir.
+[MIT](LICENSE).
