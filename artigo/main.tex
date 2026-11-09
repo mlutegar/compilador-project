@@ -13,7 +13,7 @@
 \usepackage{listings}
 \usepackage{booktabs}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning}
+\usetikzlibrary{arrows.meta,positioning,trees}
 \usepackage{url}
 
 % ---------------------------------------------------------------
@@ -128,15 +128,42 @@ do hardware frequentemente consome mais tempo do que a lógica da aplicação.
 Somam-se a isso a barreira do idioma, já que palavras-chave, bibliotecas e
 documentação estão majoritariamente em inglês, e o fato de que ferramentas
 educacionais existentes ou dependem de hardware fechado, ou trabalham com
-blocos visuais que não evoluem para uma linguagem textual.
+blocos visuais que não evoluem para uma linguagem textual. Há ainda uma
+barreira de ordem prática: erros de configuração, como um pino trocado ou um
+método inexistente, só aparecem na compilação do C++ ou, pior, em tempo de
+execução, com mensagens em inglês e pouco ligadas à intenção de quem escreveu
+o programa.
 
 Este trabalho propõe o \textit{Tupã}, uma linguagem de domínio específico
 (DSL, do inglês \textit{domain-specific language}) com sintaxe em português,
 cujo compilador traduz programas de alto nível para C++ compatível com o
 ecossistema Arduino e executável no ESP32. A premissa central é que o usuário
 descreva \emph{o que} o dispositivo deve fazer, e não \emph{como} o hardware
-deve ser configurado, delegando ao compilador o trabalho de baixo nível.
+deve ser configurado, delegando ao compilador o trabalho de baixo nível. O
+projeto foi desenvolvido na disciplina de Linguagens Formais e Compiladores
+do IBMEC e cobre o ciclo completo: da especificação da linguagem à execução
+de um protótipo físico, passando por um ambiente web para experimentação.
 
+\subsection{Objetivos}
+O \emph{objetivo geral} é projetar e implementar uma DSL em português para
+programar o ESP32, com um compilador que percorra as fases clássicas e gere
+código Arduino válido para a placa-alvo. Os \emph{objetivos específicos} são:
+\begin{enumerate}
+\item definir a especificação léxica e a gramática da linguagem, com eventos
+de hardware como construções de primeira classe;
+\item implementar as fases de análise léxica, sintática e semântica e a
+geração de código em C++/Arduino;
+\item catalogar os erros do compilador com códigos estáveis e mensagens
+didáticas em português;
+\item oferecer um ambiente web público para experimentar a linguagem sem
+instalar nada;
+\item montar um protótipo de hardware (ESP32, leitor NFC, sensor
+infravermelho, botão e LEDs) e validar a geração de código contra ele;
+\item medir a economia de código e o custo em memória em relação ao C++
+equivalente.
+\end{enumerate}
+
+\subsection{Contribuições}
 As principais contribuições são:
 \begin{itemize}
 \item o projeto de uma linguagem textual em português com eventos de
@@ -149,25 +176,70 @@ da gravação na placa e produz mensagens didáticas em português;
 código C++ equivalente gerado.
 \end{itemize}
 
-O restante do artigo está organizado da seguinte forma: a Seção~\ref{sec:relacionados}
-discute trabalhos relacionados; a Seção~\ref{sec:linguagem} descreve a
-linguagem; a Seção~\ref{sec:compilador} detalha a arquitetura do compilador;
-a Seção~\ref{sec:resultados} apresenta resultados preliminares; e a
-Seção~\ref{sec:conclusao} conclui e aponta trabalhos futuros.
+O restante do artigo está organizado da seguinte forma: a
+Seção~\ref{sec:fundamentacao} apresenta a fundamentação teórica e os trabalhos
+relacionados; a Seção~\ref{sec:metodologia} descreve a metodologia; a
+Seção~\ref{sec:linguagem} define a linguagem; a Seção~\ref{sec:compilador}
+detalha cada fase do compilador; a Seção~\ref{sec:ambiente} trata do ambiente
+web; a Seção~\ref{sec:hardware} descreve o hardware; a
+Seção~\ref{sec:resultados} apresenta os resultados; a
+Seção~\ref{sec:discussao} discute limitações; e a Seção~\ref{sec:conclusao}
+conclui e aponta trabalhos futuros.
 
 % ===============================================================
-\section{Trabalhos Relacionados}\label{sec:relacionados}
+\section{Fundamentação Teórica e Trabalhos Relacionados}\label{sec:fundamentacao}
 % ===============================================================
+\subsection{Linguagens de Domínio Específico}
+Uma DSL é uma linguagem de expressividade restrita, voltada a um domínio de
+problema particular, em contraste com as linguagens de propósito geral
+\cite{mernik}. Mernik, Heering e Sloane discutem quando vale a pena criar uma
+DSL e como desenvolvê-la, e destacam que o ganho vem de notações próximas do
+vocabulário do domínio, ao custo de projetar e manter a linguagem e suas
+ferramentas \cite{mernik}. Fowler distingue DSLs \emph{internas}, embutidas em
+uma linguagem hospedeira e que aproveitam sua sintaxe e seu compilador, de
+DSLs \emph{externas}, com sintaxe própria e analisador próprio
+\cite{fowler}. A abordagem de DSLs embutidas em uma linguagem hospedeira
+também é discutida por Hudak \cite{hudak}. O Tupã é uma DSL externa: tem
+gramática própria, o que permite palavras-chave em português e mensagens de
+erro sob medida, mas exige a construção de todas as fases do compilador.
+
+\subsection{Fases de um Compilador}
+A organização clássica de um compilador \cite{aho} separa um \emph{front-end},
+que analisa o programa-fonte, de um \emph{back-end}, que sintetiza o programa
+de saída. O front-end compreende a análise léxica, que agrupa caracteres em
+\textit{tokens} por meio de expressões regulares; a análise sintática, que
+verifica a estrutura segundo uma gramática livre de contexto e produz uma
+árvore sintática; e a análise semântica, que confere nomes, tipos e demais
+restrições que a gramática não expressa. O back-end gera o código de saída. No
+Tupã, essas quatro fases são módulos independentes de um pipeline linear.
+
+\subsection{Transpilação para C++ e Plataforma ESP32/Arduino}
+Um transpilador (ou compilador fonte a fonte) traduz um programa para outra
+linguagem de alto nível, em vez de código de máquina. O Tupã adota essa
+estratégia: gera um \textit{sketch} Arduino em C++, e a cadeia de ferramentas
+existente (Arduino CLI \cite{arduinocli} e o núcleo \texttt{esp32} da
+Espressif) cuida da compilação para o binário. A vantagem é reaproveitar
+bibliotecas maduras, como a MFRC522 \cite{mfrc522}, e o gerenciamento de
+placas. O ESP32 \cite{esp32} é um microcontrolador com Wi-Fi e Bluetooth,
+programável pelo ambiente Arduino, em que o programa se organiza nas funções
+\texttt{setup()}, executada uma vez, e \texttt{loop()}, executada
+repetidamente \cite{arduino}.
+
+\subsection{Trabalhos Relacionados}
 O \textit{Arduino IDE} \cite{arduino} consolidou-se como a principal porta de
 entrada para a programação de microcontroladores. Sua linguagem, um
 subconjunto de C++ acompanhado de bibliotecas, é poderosa e madura, mas exige
 do usuário conhecimento de C++, do mapeamento de pinos e das APIs de cada
 periférico.
 
+O \textit{Scratch} \cite{scratch} mostrou que uma linguagem de blocos, com
+foco em baixa barreira de entrada, atrai milhões de jovens para a programação.
 O \textit{Microsoft MakeCode} \cite{makecode} e o \textit{Blockly}
-\cite{blockly} oferecem ambientes de programação por blocos voltados ao
-ensino. Embora reduzam a barreira inicial, não geram código Arduino nativo
-e não oferecem ao estudante uma linguagem textual real para a qual ele possa
+\cite{blockly} estendem a ideia a microcontroladores e a ambientes
+educacionais. O MakeCode, em particular, compila programas de blocos ou
+JavaScript para código nativo em placas educacionais. Embora essas
+ferramentas reduzam a barreira inicial, não geram código Arduino legível nem
+oferecem ao estudante uma linguagem textual em português para a qual ele possa
 migrar.
 
 O \textit{Flipper Zero} \cite{flipper} inspira o conceito de um dispositivo
@@ -181,6 +253,54 @@ ensino de algoritmos, mas não é voltado a sistemas embarcados.
 O Tupã ocupa a lacuna entre essas abordagens: uma linguagem textual em
 português, que compila para C++/Arduino nativo e executa no ESP32, pensada
 para \textit{makers} e para o ensino de sistemas embarcados.
+
+% ===============================================================
+\section{Metodologia e Desenvolvimento}\label{sec:metodologia}
+% ===============================================================
+\subsection{Processo do Grupo e Cronograma}
+O grupo, de quatro estudantes, trabalhou de forma incremental: primeiro a
+especificação da linguagem (tokens, gramática e exemplo canônico), depois o
+compilador fase a fase, na ordem do \textit{pipeline}, e por fim o ambiente
+web e a integração com o hardware. Cada fase só foi considerada pronta com
+testes automatizados. O cronograma do semestre, organizado em torno das
+entregas da disciplina, foi o seguinte: pitch em setembro (plano de
+negócios, pesquisa, marca, orçamento e documentação no Git); vídeo tutorial
+e artigo em outubro; documentação completa no Git, cobrindo léxico, sintático,
+semântico, geração de código e tabela de erros, e demonstração na placa em
+novembro. O teste de bancada do hardware ocorreu em 26/10/2026.
+
+\subsection{Ferramentas}
+O compilador é escrito em Python 3, sem dependências além da biblioteca padrão.
+Os testes usam \textit{pytest}. O ambiente web usa FastAPI, React com
+CodeMirror e Docker (Seção~\ref{sec:ambiente}). A compilação do C++ gerado e a
+medição de memória usam a Arduino CLI 1.5.1, o núcleo \texttt{esp32:esp32}
+3.3.12 e a biblioteca MFRC522 1.4.12. O artigo é escrito em \LaTeX\ com a
+classe IEEEtran.
+
+A interface de linha de comando, \texttt{tupa}, expõe uma fase por
+subcomando: \texttt{tupa tokens} imprime a análise léxica, \texttt{tupa ast}
+imprime a árvore, \texttt{tupa simbolos} imprime a tabela de símbolos e
+\texttt{tupa build arquivo.tupa -o pasta --placa p} gera o \texttt{.ino}. Essa
+separação foi útil para depurar e para documentar cada fase com saídas reais.
+O compilador encerra com status 1 em erros de linguagem e 2 em erros de placa
+ou de arquivo.
+
+\subsection{Testes}
+Há três grupos de testes automatizados, hoje em 98 casos: 41 do compilador
+(\texttt{test\_compilador.py}), 46 do catálogo de erros
+(\texttt{test\_erros.py}) e 11 da API web (\texttt{test\_web\_api.py}). Os
+testes do catálogo executam o exemplo mínimo de cada erro e exigem o código e a
+mensagem esperados, conferem que a documentação gerada está sincronizada com o
+catálogo e que todo código citado no fonte existe no catálogo. Além disso, o
+código gerado é compilado de fato com a Arduino CLI.
+
+\subsection{Uso de Git}
+O código, a documentação e o artigo ficam em um repositório Git público, com
+licença MIT, em \url{https://github.com/mlutegar/compilador-project}. O histórico
+registra cada etapa do desenvolvimento em \textit{commits}, atualmente 23. A
+documentação em \texttt{docs/} traz a especificação léxica, a tabela de
+tokens, a análise sintática e semântica, a tabela de erros e a evidência de
+compilação para a placa.
 
 % ===============================================================
 \section{A Linguagem Tupã}\label{sec:linguagem}
@@ -220,86 +340,10 @@ dispositivo controle {
 Um programa Tupã é composto por um bloco \texttt{dispositivo}, que pode
 declarar variáveis de estado e um ou mais tratadores de evento introduzidos
 pela palavra-chave \texttt{ao}. Dentro de um tratador, o usuário utiliza
-estruturas de controle e chamadas a métodos dos módulos de hardware.
-
-\subsection{Léxico}
-O vocabulário da linguagem é composto por 44 tipos de \textit{token}: 43
-enviados ao analisador sintático mais o marcador sintético de fim de entrada
-(\texttt{TK\_EOF}). Espaços e comentários de linha, iniciados por
-\texttt{\#}, são reconhecidos e descartados, e por isso não entram na
-contagem. Os nomes de evento \texttt{iniciar}, \texttt{obstaculo} e
-\texttt{cartao} não são \textit{tokens} próprios: chegam como identificadores
-e são conferidos na análise semântica, o que mantém \texttt{cartao} livre como
-nome de variável. A Tabela~\ref{tab:tokens} apresenta a distribuição por categoria.
-
-\begin{table}[htbp]
-\caption{Contagem de \textit{tokens} da linguagem Tupã por categoria}
-\begin{center}
-\begin{tabular}{lcp{3.6cm}}
-\toprule
-\textbf{Categoria} & \textbf{Qtde} & \textbf{Exemplos} \\
-\midrule
-Palavras reservadas & 12 & \texttt{dispositivo}, \texttt{ao}, \texttt{se}, \texttt{senao}, \texttt{repetir}, \texttt{inteiro} \\
-Hardware e comandos & 6  & \texttt{nfc}, \texttt{ir}, \texttt{led}, \texttt{botao}, \texttt{esperar}, \texttt{escrever} \\
-Identificador       & 1  & \texttt{cartao} \\
-Literais            & 3  & inteiro, decimal, texto \\
-Operadores          & 14 & \texttt{==}, \texttt{=}, \texttt{\&\&}, \texttt{+} \\
-Delimitadores       & 7  & \texttt{\{ \}}, \texttt{( )}, \texttt{;}, \texttt{.} \\
-\midrule
-Enviados ao parser  & 43 & \\
-Fim de entrada      & 1  & \texttt{TK\_EOF} \\
-\midrule
-\textbf{Total}      & \textbf{44} & \\
-\bottomrule
-\end{tabular}
-\label{tab:tokens}
-\end{center}
-\end{table}
-
-\subsection{Gramática}
-A Fig.~\ref{fig:gramatica} apresenta a gramática, em notação EBNF, que o
-analisador sintático efetivamente aceita. Além de \texttt{ao botao(N)}, há os
-eventos \texttt{ao iniciar} (uma vez, na partida), \texttt{ao obstaculo}
-(mudança do sensor infravermelho) e \texttt{ao cartao} (cartão novo lido, com
-\texttt{cartao.uid} e \texttt{cartao.valido}), e o comando \texttt{escrever},
-que envia um valor ao Monitor Serial. As regras de expressão estão
-agrupadas por nível de precedência, da menor para a maior.
-
-\begin{figure}[htbp]
-\centering
-\begin{lstlisting}[basicstyle=\ttfamily\tiny, numbers=none, xleftmargin=0pt, framexleftmargin=0pt]
-programa  ::= "dispositivo" ID "{" item* "}" EOF
-item      ::= evento | comando
-evento    ::= "ao" "botao" "(" INT ")" bloco
-            | "ao" nome_evento bloco
-nome_evento ::= "iniciar" | "obstaculo" | "cartao"
-bloco     ::= "{" comando* "}"
-comando   ::= decl_var | se | repetir | esperar
-            | escrever | retornar | atrib_ou_chamada
-decl_var  ::= tipo ID ("=" expr)? ";"
-tipo      ::= "inteiro" | "decimal" | "texto" | "booleano"
-se        ::= "se" expr bloco ("senao" bloco)?
-repetir   ::= "repetir" "(" expr ")" bloco
-esperar   ::= "esperar" "(" expr ")" ";"
-escrever  ::= "escrever" "(" expr ")" ";"
-retornar  ::= "retornar" expr? ";"
-atrib_ou_chamada ::= expr ("=" expr)? ";"
-expr      ::= e ("||" e)*
-e         ::= igualdade ("&&" igualdade)*
-igualdade ::= comparacao (("==" | "!=") comparacao)*
-comparacao ::= termo ((">" | "<" | ">=" | "<=") termo)*
-termo     ::= fator (("+" | "-") fator)*
-fator     ::= unaria (("*" | "/") unaria)*
-unaria    ::= ("!" | "-") unaria | posfixo
-posfixo   ::= primario ("." ID | "(" args? ")")*
-args      ::= expr ("," expr)*
-primario  ::= INT | FLOAT | STRING | "verdadeiro" | "falso"
-            | "nfc" | "ir" | "led" | "botao" | ID
-            | "(" expr ")"
-\end{lstlisting}
-\caption{Gramática do Tupã em EBNF, conforme o analisador sintático.}
-\label{fig:gramatica}
-\end{figure}
+estruturas de controle e chamadas a métodos dos módulos de hardware. Os
+eventos disponíveis são \texttt{ao iniciar}, \texttt{ao botao(N)},
+\texttt{ao obstaculo} e \texttt{ao cartao}. Os tipos de dado são
+\texttt{inteiro}, \texttt{decimal}, \texttt{texto} e \texttt{booleano}.
 
 % ===============================================================
 \section{Arquitetura do Compilador}\label{sec:compilador}
@@ -339,15 +383,86 @@ CLI \cite{arduinocli}; essa etapa não é executada pelo compilador.
 \subsection{Análise Léxica}
 O analisador léxico converte o texto-fonte em uma sequência de
 \textit{tokens}, registrando linha e coluna de cada um para uso nas
-mensagens de erro das fases seguintes. A técnica é a de expressões regulares:
-uma única expressão mestre reúne todas as alternativas como grupos nomeados e
-é aplicada de forma iterativa sobre o texto, o que dá a cada \textit{token}
-o grupo que casou primeiro. A ordem das alternativas é significativa, de modo
-que operadores de dois caracteres, como \texttt{==} e \texttt{>=}, precedem
-os de um caractere, e literais decimais precedem os inteiros. As palavras
-reservadas não têm expressão própria: o identificador casado é reclassificado
-por consulta a um dicionário. Um caractere que nenhuma alternativa reconhece
-produz um erro léxico com linha e coluna.
+mensagens de erro das fases seguintes. O vocabulário é composto por 44 tipos de
+\textit{token}: 43 enviados ao analisador sintático mais o marcador sintético
+de fim de entrada (\texttt{TK\_EOF}). Espaços e comentários de linha,
+iniciados por \texttt{\#}, são reconhecidos e descartados, e por isso não
+entram na contagem. A Tabela~\ref{tab:tokens} lista os 44 tipos.
+
+Os nomes de evento \texttt{iniciar}, \texttt{obstaculo} e \texttt{cartao} não
+são \textit{tokens} próprios: chegam como identificadores e são conferidos na
+análise semântica, o que mantém \texttt{cartao} livre como nome de variável.
+Do mesmo modo, métodos como \texttt{ler} e \texttt{verde} e propriedades como
+\texttt{valido} são identificadores comuns, validados pela análise semântica.
+
+\begin{table*}[htbp]
+\caption{Os 44 tipos de \textit{token} da linguagem Tupã (prefixo \texttt{TK\_} omitido)}
+\begin{center}
+\setlength{\tabcolsep}{4pt}
+\footnotesize
+\begin{tabular}{llllll}
+\toprule
+\textbf{Token} & \textbf{Lexema / padrão} & \textbf{Token} & \textbf{Lexema / padrão} & \textbf{Token} & \textbf{Lexema / padrão} \\
+\midrule
+\texttt{DISPOSITIVO} & \texttt{dispositivo} & \texttt{NFC} & \texttt{nfc} & \texttt{IGUAL} & \texttt{==} \\
+\texttt{AO} & \texttt{ao} & \texttt{IR} & \texttt{ir} & \texttt{DIFERENTE} & \texttt{!=} \\
+\texttt{SE} & \texttt{se} & \texttt{LED} & \texttt{led} & \texttt{MAIOR} & \texttt{>} \\
+\texttt{SENAO} & \texttt{senao} & \texttt{BOTAO} & \texttt{botao} & \texttt{MENOR} & \texttt{<} \\
+\texttt{REPETIR} & \texttt{repetir} & \texttt{ESPERAR} & \texttt{esperar} & \texttt{MAIOR\_IGUAL} & \texttt{>=} \\
+\texttt{INTEIRO} & \texttt{inteiro} & \texttt{ESCREVER} & \texttt{escrever} & \texttt{MENOR\_IGUAL} & \texttt{<=} \\
+\texttt{DECIMAL} & \texttt{decimal} & \texttt{ID} & \texttt{[a-zA-Z][a-zA-Z0-9\_]*} & \texttt{SOMA} & \texttt{+} \\
+\texttt{TEXTO} & \texttt{texto} & \texttt{INT} & \texttt{[0-9]+} & \texttt{SUB} & \texttt{-} \\
+\texttt{BOOLEANO} & \texttt{booleano} & \texttt{FLOAT} & \texttt{[0-9]+\textbackslash.[0-9]+([eE][+-]?[0-9]+)?} & \texttt{MULT} & \texttt{*} \\
+\texttt{VERDADEIRO} & \texttt{verdadeiro} & \texttt{STRING} & \texttt{"[\^{}"\textbackslash n]*"} & \texttt{DIV} & \texttt{/} \\
+\texttt{FALSO} & \texttt{falso} & \texttt{ATRIB} & \texttt{=} & \texttt{E} & \texttt{\&\&} \\
+\texttt{RETORNAR} & \texttt{retornar} & \texttt{ABRE\_PAR} & \texttt{(} & \texttt{OU} & \texttt{||} \\
+\texttt{VIRGULA} & \texttt{,} & \texttt{FECHA\_PAR} & \texttt{)} & \texttt{NAO} & \texttt{!} \\
+\texttt{PONTO} & \texttt{.} & \texttt{ABRE\_CHAVE} & \texttt{\{} & \texttt{PONTO\_VIRGULA} & \texttt{;} \\
+\texttt{EOF} & fim da entrada & \texttt{FECHA\_CHAVE} & \texttt{\}} & & \\
+\bottomrule
+\end{tabular}
+\label{tab:tokens}
+\end{center}
+\end{table*}
+
+A técnica é a de expressões regulares: uma única expressão mestre reúne todas
+as alternativas como grupos nomeados, na forma
+\texttt{(?P<TK\_ESPACO>...)\allowbreak|\allowbreak(?P<TK\_COMENTARIO>...)\allowbreak|\allowbreak(?P<TK\_FLOAT>...)\allowbreak|...},
+e é aplicada de forma iterativa sobre o texto, o que dá a cada \textit{token}
+o grupo que casou primeiro. A ordem das alternativas é significativa: espaços
+e comentários vêm primeiro, os literais decimais precedem os inteiros, e os
+operadores de dois caracteres, como \texttt{==} e \texttt{>=}, precedem os de
+um caractere. As palavras reservadas não têm expressão própria: o
+identificador casado é reclassificado por consulta a um dicionário. Um
+caractere que nenhuma alternativa reconhece produz o erro léxico L01, com
+linha e coluna.
+
+Como exemplo real, a Tabela~\ref{tab:tokenizacao} mostra a tokenização da
+linha~8 do exemplo canônico, \texttt{cartao = nfc.ler();}, obtida com o
+comando \texttt{tupa tokens}. Note que \texttt{ler} é um \texttt{TK\_ID}, e
+não uma palavra reservada.
+
+\begin{table}[htbp]
+\caption{Tokenização de \texttt{cartao = nfc.ler();} (linha 8 de \texttt{controle\_nfc.tupa})}
+\begin{center}
+\footnotesize
+\begin{tabular}{llc}
+\toprule
+\textbf{Token} & \textbf{Lexema} & \textbf{Linha:coluna} \\
+\midrule
+\texttt{TK\_ID} & \texttt{cartao} & 8:9 \\
+\texttt{TK\_ATRIB} & \texttt{=} & 8:16 \\
+\texttt{TK\_NFC} & \texttt{nfc} & 8:18 \\
+\texttt{TK\_PONTO} & \texttt{.} & 8:21 \\
+\texttt{TK\_ID} & \texttt{ler} & 8:22 \\
+\texttt{TK\_ABRE\_PAR} & \texttt{(} & 8:25 \\
+\texttt{TK\_FECHA\_PAR} & \texttt{)} & 8:26 \\
+\texttt{TK\_PONTO\_VIRGULA} & \texttt{;} & 8:27 \\
+\bottomrule
+\end{tabular}
+\label{tab:tokenizacao}
+\end{center}
+\end{table}
 
 \subsection{Análise Sintática}
 O analisador sintático consome os \textit{tokens} e constrói uma árvore
@@ -355,39 +470,214 @@ sintática abstrata (AST) que representa o dispositivo, suas declarações e
 seus tratadores de evento. A técnica é a de descendência recursiva
 preditiva, com um \textit{token} de antecipação e sem retrocesso: cada
 não-terminal da Fig.~\ref{fig:gramatica} é um método do analisador. A
-precedência das expressões é obtida por uma cadeia de métodos, um por nível,
-com laços que produzem associatividade à esquerda. O primeiro erro sintático
-interrompe a compilação, sem recuperação. A AST possui 17 tipos de nó, todos
-com linha e coluna: \texttt{Programa}, \texttt{DeclVar}, \texttt{Evento},
-\texttt{Atribuicao}, \texttt{Se}, \texttt{Repetir}, \texttt{Esperar},
-\texttt{Escrever}, \texttt{Retornar}, \texttt{ExprComando}, \texttt{Binaria},
-\texttt{Unaria}, \texttt{Literal}, \texttt{Identificador},
-\texttt{Hardware}, \texttt{AcessoMembro} e \texttt{Chamada}.
+Fig.~\ref{fig:gramatica} apresenta a gramática completa, em notação EBNF, que
+o analisador efetivamente aceita. Além de \texttt{ao botao(N)}, há os eventos
+\texttt{ao iniciar} (uma vez, na partida), \texttt{ao obstaculo} (mudança do
+sensor infravermelho) e \texttt{ao cartao} (cartão novo lido, com
+\texttt{cartao.uid} e \texttt{cartao.valido}), e o comando \texttt{escrever},
+que envia um valor ao Monitor Serial. As regras de expressão estão agrupadas
+por nível de precedência, da menor para a maior, obtida por uma cadeia de
+métodos, um por nível, com laços que produzem associatividade à esquerda. O
+primeiro erro sintático interrompe a compilação, sem recuperação.
+
+\begin{figure}[htbp]
+\centering
+\begin{lstlisting}[basicstyle=\ttfamily\tiny, numbers=none, xleftmargin=0pt, framexleftmargin=0pt]
+programa  ::= "dispositivo" ID "{" item* "}" EOF
+item      ::= evento | comando
+evento    ::= "ao" "botao" "(" INT ")" bloco
+            | "ao" nome_evento bloco
+nome_evento ::= "iniciar" | "obstaculo" | "cartao"
+bloco     ::= "{" comando* "}"
+comando   ::= decl_var | se | repetir | esperar
+            | escrever | retornar | atrib_ou_chamada
+decl_var  ::= tipo ID ("=" expr)? ";"
+tipo      ::= "inteiro" | "decimal" | "texto" | "booleano"
+se        ::= "se" expr bloco ("senao" bloco)?
+repetir   ::= "repetir" "(" expr ")" bloco
+esperar   ::= "esperar" "(" expr ")" ";"
+escrever  ::= "escrever" "(" expr ")" ";"
+retornar  ::= "retornar" expr? ";"
+atrib_ou_chamada ::= expr ("=" expr)? ";"
+expr      ::= e ("||" e)*
+e         ::= igualdade ("&&" igualdade)*
+igualdade ::= comparacao (("==" | "!=") comparacao)*
+comparacao ::= termo ((">" | "<" | ">=" | "<=") termo)*
+termo     ::= fator (("+" | "-") fator)*
+fator     ::= unaria (("*" | "/") unaria)*
+unaria    ::= ("!" | "-") unaria | posfixo
+posfixo   ::= primario ("." ID | "(" args? ")")*
+args      ::= expr ("," expr)*
+primario  ::= INT | FLOAT | STRING | "verdadeiro" | "falso"
+            | "nfc" | "ir" | "led" | "botao" | ID
+            | "(" expr ")"
+\end{lstlisting}
+\caption{Gramática do Tupã em EBNF, conforme o analisador sintático.}
+\label{fig:gramatica}
+\end{figure}
+
+A AST possui 17 tipos de nó, todos com linha e coluna: \texttt{Programa},
+\texttt{DeclVar}, \texttt{Evento}, \texttt{Atribuicao}, \texttt{Se},
+\texttt{Repetir}, \texttt{Esperar}, \texttt{Escrever}, \texttt{Retornar},
+\texttt{ExprComando}, \texttt{Binaria}, \texttt{Unaria}, \texttt{Literal},
+\texttt{Identificador}, \texttt{Hardware}, \texttt{AcessoMembro} e
+\texttt{Chamada}. A Fig.~\ref{fig:ast} mostra a AST do exemplo canônico, usando
+11 desses tipos.
+
+\begin{figure*}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  grow'=right, level distance=2.55cm,
+  every node/.style={draw=orange!80!black, rounded corners=2pt, font=\scriptsize, inner sep=2pt, anchor=west},
+  level 1/.style={sibling distance=3.6cm},
+  level 2/.style={sibling distance=1.5cm},
+  level 3/.style={sibling distance=0.6cm},
+  edge from parent/.style={draw=gray, thick},
+  edge from parent path={(\tikzparentnode.east) -- ++(0.25,0) |- (\tikzchildnode.west)}
+]
+\node {Programa}
+  child { node {DeclVar: \texttt{tentativas}}
+    child { node {Literal: 3} } }
+  child { node {Evento: \texttt{botao(1)}}
+    child { node {Atribuicao: \texttt{=}}
+      child { node {Identificador: \texttt{cartao}} }
+      child { node {Chamada}
+        child { node {AcessoMembro: \texttt{.ler}}
+          child { node {Hardware: \texttt{nfc}} } } } }
+    child { node {Se}
+      child { node {Binaria: \texttt{==}}
+        child { node {AcessoMembro: \texttt{.valido}}
+          child { node {Identificador: \texttt{cartao}} } }
+        child { node {Literal: verdadeiro} } }
+      child { node {ExprComando}
+        child { node {Chamada}
+          child { node {AcessoMembro: \texttt{.verde}}
+            child { node {Hardware: \texttt{led}} } } } }
+      child { node {Esperar}
+        child { node {Literal: 1500} } }
+      child { node {ExprComando (senao)}
+        child { node {Chamada}
+          child { node {AcessoMembro: \texttt{.vermelho}}
+            child { node {Hardware: \texttt{led}} } } } } } };
+\end{tikzpicture}}
+\caption{AST de \texttt{controle\_nfc.tupa}. Os filhos de \texttt{Se} são, em
+ordem, a condição, o bloco \texttt{então} (dois comandos) e o bloco
+\texttt{senao}.}
+\label{fig:ast}
+\end{figure*}
 
 \subsection{Análise Semântica}
 A análise semântica é o que diferencia o Tupã de um simples tradutor de
 texto. Além das verificações usuais, como tipos e declaração de variáveis,
 ela valida o uso dos módulos de hardware: cada módulo expõe um conjunto
 conhecido de métodos, e chamadas inexistentes são rejeitadas antes de
-qualquer código ser gerado. A Fig.~\ref{fig:erro} mostra a mensagem emitida
-quando o programador chama um método inexistente no módulo \texttt{led}: o
-erro é localizado por linha e coluna, explicado em português e acompanhado
-da lista de métodos disponíveis, em tom didático.
+qualquer código ser gerado. A fase mantém uma \emph{pilha de escopos}
+(dicionários de nome para tipo), aberta em cada evento, \texttt{se},
+\texttt{senao} e \texttt{repetir}, e uma \emph{tabela de símbolos}
+permanente, com nome, tipo, escopo, linha e coluna de cada variável, impressa
+pelo comando \texttt{tupa simbolos}. Para o exemplo canônico, a tabela contém
+\texttt{tentativas} (\texttt{inteiro}, escopo global, 3:5) e \texttt{cartao}
+(tipo \texttt{cartao}, escopo \texttt{ao botao(1)}, 8:16). A variável
+\texttt{cartao} é criada pela primeira atribuição, o que permite escrever
+\texttt{cartao = nfc.ler();} sem declaração.
+
+As verificações cobrem: existência e unicidade de nomes; compatibilidade de
+tipos (\texttt{decimal} aceita \texttt{inteiro}, os demais só o próprio
+tipo); condições booleanas em \texttt{se} e \texttt{!}; operandos numéricos em
+\texttt{esperar} e \texttt{repetir}; existência de módulo, método e propriedade
+e número de argumentos; validade e unicidade dos eventos; e dependências da
+placa, pois \texttt{ao botao(N)} exige um pino para o botão~N e
+\texttt{ao obstaculo} exige o pino do sensor IR. Cada erro tem um código
+estável, em quatro famílias: \textbf{L} (léxico), \textbf{S} (sintático),
+\textbf{E} (semântico) e \textbf{G} (geração e arquivo de placa). A
+Tabela~\ref{tab:erros} resume o catálogo, que no total tem 1 erro léxico, 13
+sintáticos, 21 semânticos (dois deles defesas internas) e 5 de geração.
+
+\begin{table}[htbp]
+\caption{Resumo da Tabela de Erros (catálogo completo em \texttt{docs/tabela-de-erros.md})}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llp{4.6cm}}
+\toprule
+\textbf{Código} & \textbf{Fase} & \textbf{Condição} \\
+\midrule
+L01 & léxico & caractere que nenhum \textit{token} reconhece \\
+S01 a S13 & sintático & \texttt{dispositivo}, nome, chaves, parênteses, número do botão, nome de variável, \texttt{;}, nome de membro, nome de evento, expressão ou código após o fim ausentes ou fora de lugar \\
+E01 a E05 & semântico & evento: sem pino IR, desconhecido, botão inválido, botão sem pino, repetido \\
+E07, E08 & semântico & \texttt{escrever} de chamada sem valor ou de objeto inteiro \\
+E09, E12 & semântico & variável redeclarada ou não declarada \\
+E10, E21 & semântico & alvo de atribuição inválido; tipos incompatíveis \\
+E11, E14, E20 & semântico & condição, \texttt{!} ou \texttt{esperar}/\texttt{repetir} com tipo errado \\
+E13, E16 a E19 & semântico & módulo sem método, propriedade ou método inexistente, argumentos errados \\
+E06, E15 & interno & defesas contra nó desconhecido \\
+G01 a G05 & placa/arquivo & placa inexistente, UID inválido, campo ausente, arquivo inexistente \\
+\bottomrule
+\end{tabular}
+\label{tab:erros}
+\end{center}
+\end{table}
+
+Os módulos de hardware e seus métodos, que a análise consulta em um
+dicionário único, são os da Tabela~\ref{tab:api}. O tipo \texttt{cartao} tem
+as propriedades \texttt{valido} (booleano) e \texttt{uid} (texto). A
+checagem do número de argumentos e do tipo de retorno vem dessa mesma
+tabela, e acrescentar um método à linguagem é acrescentar uma entrada nela e a
+tradução correspondente no gerador.
+
+\begin{table}[htbp]
+\caption{API de hardware conhecida pela análise semântica}
+\begin{center}
+\footnotesize
+\begin{tabular}{llc}
+\toprule
+\textbf{Módulo} & \textbf{Método} & \textbf{Retorno} \\
+\midrule
+\texttt{led} & \texttt{verde()}, \texttt{vermelho()}, \texttt{apagar()} & vazio \\
+\texttt{nfc} & \texttt{ler()} & \texttt{cartao} \\
+\texttt{ir} & \texttt{detectado()} & booleano \\
+\texttt{botao} & \texttt{pressionado()} & booleano \\
+\bottomrule
+\end{tabular}
+\label{tab:api}
+\end{center}
+\end{table}
+
+A Fig.~\ref{fig:erro} mostra a mensagem real emitida quando o programador
+chama um método inexistente no módulo \texttt{led} (E19): o erro é localizado
+por linha e coluna, explicado em português e acompanhado da lista de métodos
+disponíveis, em tom didático. A Fig.~\ref{fig:erro2} mostra o erro E04, que
+nasce da dependência entre programa e placa: o botão 2 não tem GPIO no arquivo
+da placa, e a mensagem diz como declarar um.
 
 \begin{figure}[htbp]
 \centering
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize, numbers=none, xleftmargin=0pt, framexleftmargin=0pt]
-$ tupa build controle.tupa
-
-erro semantico - linha 11, coluna 16
+erro semantico [E19] - linha 3, coluna 12
     metodo inexistente no modulo 'led'
     disponiveis: verde(), vermelho(), apagar()
     led.roxo()
 
 compilacao interrompida: 1 erro
 \end{lstlisting}
-\caption{Mensagem de erro semântico emitida pelo compilador.}
+\caption{Erro semântico E19, saída real do compilador.}
 \label{fig:erro}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\begin{lstlisting}[basicstyle=\ttfamily\tiny, numbers=none, xleftmargin=0pt, framexleftmargin=0pt]
+erro semantico [E04] - linha 2, coluna 5
+    a placa 'esp32_wrover' não tem pino configurado
+    para o botao 2
+    botoes com pino: 1
+    para usar o botao 2, ligue-o a um GPIO e declare
+    em "pinos.botoes" de compilador/placas/esp32_wrover.json
+    ao botao(2)
+\end{lstlisting}
+\caption{Erro semântico E04, saída real do compilador.}
+\label{fig:erro2}
 \end{figure}
 
 \subsection{Geração de Código}
@@ -396,54 +686,202 @@ inclusões de bibliotecas necessárias, como a MFRC522 para o leitor NFC
 \cite{mfrc522}; as definições de pinos; a inicialização dos periféricos em
 \texttt{setup()}; e a tradução dos tratadores de evento para verificações
 dentro de \texttt{loop()}. Bibliotecas e pinos só são emitidos quando o
-programa usa o módulo correspondente. A pinagem não está mais fixa no
-gerador: vem de um arquivo de placa em JSON
+programa usa o módulo correspondente.
+
+A pinagem não está fixa no gerador: vem de um \emph{arquivo de placa} em JSON
 (\texttt{compilador/placas/esp32\_wrover.json}, escolhido pela opção
-\texttt{--placa}), que traz também o FQBN da Arduino CLI e a lista de UIDs
-autorizados. Para a ESP32-WROVER-DEV, os LEDs verde e vermelho ficam nos GPIO
-25 e 26, o botão 1 no GPIO 4 com \textit{pull-up} interno, o sensor
-infravermelho no GPIO 34 e o leitor NFC com SS no GPIO 5 e RST no GPIO 22, valores
-conferidos em bancada. O \textit{debounce} usa \texttt{millis()}, sem
-\texttt{delay()}, com janela de 50~ms e ação na borda. A chamada
-\texttt{nfc.ler()} espera até 3~s por um cartão e, sem cartão, devolve um
-resultado inválido; ao fim da leitura o cartão é encerrado com
+\texttt{--placa}), que traz o FQBN da Arduino CLI, a pinagem, o modo elétrico
+dos sensores e a lista de UIDs autorizados. A Listagem~\ref{lst:placa} mostra
+um trecho. Trocar de placa passa a ser trocar de arquivo.
+
+\begin{lstlisting}[basicstyle=\ttfamily\tiny, numbers=none, xleftmargin=0pt, framexleftmargin=0pt, caption={Trecho do arquivo de placa \texttt{esp32\_wrover.json}.}, label={lst:placa}]
+{ "nome": "esp32_wrover",
+  "fqbn": "esp32:esp32:esp32wrover",
+  "pinos": { "nfc_ss": 5, "nfc_rst": 22,
+             "led_verde": 25, "led_vermelho": 26,
+             "ir": 34, "botoes": { "1": 4 } },
+  "eletrica": {
+    "botao": { "modo": "INPUT_PULLUP", "ativo_em": "LOW" },
+    "ir":    { "modo": "INPUT", "ativo_em": "LOW" } },
+  "nfc": { "timeout_ms": 3000,
+           "uids_autorizados": ["33 7A 87 F7",
+                                "43 A3 6F F5"] } }
+\end{lstlisting}
+
+O mapeamento dos eventos para C++ é resumido na Tabela~\ref{tab:eventos}.
+Os eventos de botão e de obstáculo detectam \emph{bordas}, e não níveis, de
+modo que cada ação dispara uma única vez.
+
+\begin{table}[htbp]
+\caption{Mapeamento de eventos e comandos Tupã para C++}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lp{5cm}}
+\toprule
+\textbf{Tupã} & \textbf{C++ gerado} \\
+\midrule
+\texttt{ao iniciar} & corpo acrescentado ao final de \texttt{setup()} \\
+\texttt{ao botao(N)} & bloco em \texttt{loop()} com leitura de \texttt{digitalRead}, \textit{debounce} por \texttt{millis()} e ação na borda de descida \\
+\texttt{ao obstaculo} & bloco em \texttt{loop()} que compara a leitura do pino IR com a anterior; ação quando vai a LOW \\
+\texttt{ao cartao} & \texttt{if (nfcTentar(cartao))} em \texttt{loop()}, sem espera \\
+\texttt{nfc.ler()} & \texttt{nfcLer()}: espera até 3~s e devolve \texttt{Cartao} \\
+\texttt{led.verde()} & \texttt{ledVerde()}: \texttt{digitalWrite} nos dois LEDs \\
+\texttt{esperar(ms)} & \texttt{delay(ms)} \\
+\texttt{escrever(x)} & \texttt{Serial.println(x)} \\
+\texttt{se}/\texttt{senao}/\texttt{repetir} & \texttt{if}/\texttt{else}/\texttt{for} \\
+\bottomrule
+\end{tabular}
+\label{tab:eventos}
+\end{center}
+\end{table}
+
+A Listagem~\ref{lst:ino} traz o trecho de \texttt{loop()} gerado a partir do
+exemplo canônico, com a ligação entre blocos e linhas do fonte em comentários.
+
+\begin{lstlisting}[language={C++}, basicstyle=\ttfamily\tiny, numbers=none, xleftmargin=0pt, framexleftmargin=0pt, caption={Trecho do \texttt{controle\_nfc.ino} gerado.}, label={lst:ino}]
+void loop() {
+  // [controle_nfc.tupa:5] ao botao(1)
+  {
+    int leitura = digitalRead(BOTAO_1);
+    if (leitura != botao1_leitura) {
+      botao1_leitura = leitura; botao1_mudou = millis(); }
+    if ((millis() - botao1_mudou) > DEBOUNCE_MS
+        && leitura != botao1_estavel) {
+      botao1_estavel = leitura;
+      if (botao1_estavel == LOW) {
+        Cartao cartao = nfcLer();
+        if ((cartao.valido == true)) {
+          ledVerde();
+          delay(1500);
+        } else {
+          ledVermelho();
+        }
+        ledApagar();
+      }
+    }
+  }
+  delay(10);
+}
+\end{lstlisting}
+
+Três decisões de projeto merecem destaque. O \textit{debounce} usa
+\texttt{millis()}, sem \texttt{delay()}, com janela de 50~ms e ação na borda.
+A chamada \texttt{nfc.ler()} espera até 3~s por um cartão e, sem cartão,
+devolve um resultado inválido; ao fim da leitura o cartão é encerrado com
 \texttt{PICC\_HaltA} e \texttt{PCD\_StopCrypto1}. A validação compara o UID
-lido com a lista de UIDs autorizados da placa. Em \texttt{setup()}, o código
-verifica o registrador de versão do RC522 e avisa pelo Serial se o leitor não
-responde. O compilador grava o resultado em \texttt{<pasta>/<pasta>.ino},
-formato exigido pela Arduino CLI, e inclui no cabeçalho a origem
-\texttt{.tupa} e a ligação entre blocos e linhas do fonte.
+lido com a lista de UIDs autorizados da placa, convertida em uma tabela
+constante em C++. Em \texttt{setup()}, o código verifica o registrador de
+versão do RC522 e avisa pelo Serial se o leitor não responde. O compilador
+grava o resultado em \texttt{<pasta>/<pasta>.ino}, formato exigido pela Arduino
+CLI.
 
-\subsection{Ambiente Web}
-O projeto inclui um \textit{playground} que expõe o compilador no navegador.
-Para o código digitado, ele mostra a lista de \textit{tokens}, a AST, os
-erros, com fase, linha e coluna, e o C++ gerado, além de métricas de linhas.
-A arquitetura é um serviço FastAPI, que reutiliza o pacote do compilador sem
-duplicar lógica e expõe o ponto \texttt{/api/compilar}, e um \textit{front-end}
-estático em React com editor CodeMirror, servido pelo próprio serviço. Como o
-compilador, o ambiente apenas gera o \texttt{.ino}.
+% ===============================================================
+\section{Ambiente Web}\label{sec:ambiente}
+% ===============================================================
+O projeto inclui um \textit{playground} que expõe o compilador no navegador,
+publicado em \url{https://tupa.mlutegar.com}. Para o código digitado, ele
+mostra a lista de \textit{tokens}, a AST, os erros, com código, fase, linha e
+coluna, e o C++ gerado, além de métricas de linhas (Fig.~\ref{fig:playground}).
 
-\subsection{Plataforma de Hardware}
+A arquitetura tem dois componentes. O serviço é um aplicativo FastAPI
+\cite{fastapi}, que reutiliza o pacote do compilador sem duplicar lógica e
+expõe, entre outros, o ponto \texttt{/api/compilar} e a consulta ao catálogo de
+erros. O \textit{front-end} é um aplicativo React \cite{react} com editor
+CodeMirror, construído com Vite e servido pelo próprio serviço. O empacotamento
+usa Docker \cite{docker}, em duas etapas: a primeira constrói o
+\textit{front-end}, e a segunda, sobre uma imagem Python enxuta, executa o
+serviço com usuário sem privilégios e \textit{healthcheck}. O \textit{deploy}
+roda esse contêiner atrás do domínio público. Como o compilador, o ambiente
+apenas gera o \texttt{.ino}. O repositório é público e o código está sob
+licença MIT \cite{mit}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{playground.png}
+\caption{Ambiente web do Tupã em \texttt{tupa.mlutegar.com}: editor, \textit{tokens}, AST, erros e C++ gerado.}
+\label{fig:playground}
+\end{figure}
+
+% ===============================================================
+\section{Plataforma de Hardware}\label{sec:hardware}
+% ===============================================================
 O protótipo utiliza uma placa ESP32-WROVER-DEV \cite{esp32}, um leitor
 NFC/RFID RC522, controlado pela biblioteca MFRC522 \cite{mfrc522}, um sensor
-infravermelho de obstáculo, dois LEDs e um botão. A pinagem usada pelo
-compilador é a do arquivo de placa \texttt{esp32\_wrover.json}: LEDs nos GPIO
-25 e 26, botão no GPIO 4, sensor infravermelho no GPIO 34 e RC522 em SPI com
-SS no GPIO 5 e RST no GPIO 22. O custo
-estimado do hardware é de aproximadamente R\$~120, e todo o software
-utilizado é de código aberto.
+infravermelho de obstáculo, dois LEDs e um botão. A pinagem, conferida em
+bancada, está na Tabela~\ref{tab:pinagem}, e é a mesma do arquivo de placa. O
+sensor infravermelho é um módulo de obstáculo, com emissor e receptor juntos e
+saída digital, e não um controle remoto; o GPIO 34 é apenas de entrada e não
+tem \textit{pull-up} interno.
+
+\begin{table}[htbp]
+\caption{Pinagem da ESP32-WROVER-DEV (conferida em bancada em 26/10/2026)}
+\begin{center}
+\footnotesize
+\begin{tabular}{lcp{3.3cm}}
+\toprule
+\textbf{Função} & \textbf{GPIO} & \textbf{Modo} \\
+\midrule
+RC522 SS & 5 & SPI \\
+RC522 RST & 22 & saída \\
+RC522 SCK / MISO / MOSI & 18 / 19 / 23 & SPI, 3,3 V \\
+Botão 1 & 4 & \texttt{INPUT\_PULLUP}, ativo em LOW \\
+LED verde & 25 & \texttt{OUTPUT} \\
+LED vermelho & 26 & \texttt{OUTPUT} \\
+Sensor IR de obstáculo & 34 & \texttt{INPUT}, ativo em LOW \\
+\bottomrule
+\end{tabular}
+\label{tab:pinagem}
+\end{center}
+\end{table}
+
+A Fig.~\ref{fig:vista} mostra a montagem em detalhe. A Tabela~\ref{tab:bom} lista os materiais com custo estimado de varejo
+brasileiro por protótipo, cerca de R\$~120 no total. Os valores são
+estimativas, e não preços de nota fiscal. Todo o software utilizado é de
+código aberto, sem custo de licença.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=6cm]{prototipo_vista_superior.jpg}\hfill
+\includegraphics[height=6cm]{prototipo_monitor_serial.jpg}
+\caption{Vista superior da montagem (esquerda) e saída do Monitor Serial com os três UIDs lidos (direita).}
+\label{fig:vista}
+\end{figure}
+
+\begin{table}[htbp]
+\caption{Lista de materiais e custo estimado (R\$)}
+\begin{center}
+\footnotesize
+\begin{tabular}{lr}
+\toprule
+\textbf{Item} & \textbf{Custo} \\
+\midrule
+ESP32 DevKit (WROVER) & 40 \\
+Leitor NFC/RFID RC522 & 15 \\
+Sensor IR de obstáculo & 10 \\
+LEDs e resistores & 5 \\
+Botões & 5 \\
+Protoboard e \textit{jumpers} & 30 \\
+Cabo USB & 15 \\
+\midrule
+\textbf{Total} & \textbf{120} \\
+\bottomrule
+\end{tabular}
+\label{tab:bom}
+\end{center}
+\end{table}
 
 % ===============================================================
-\section{Resultados Preliminares}\label{sec:resultados}
+\section{Resultados}\label{sec:resultados}
 % ===============================================================
-As quatro fases do compilador estão implementadas, e um conjunto de 50
-testes automatizados, 41 do compilador e 9 da API do ambiente web, é executado
-com sucesso. Dois programas são traduzidos de ponta a ponta até um arquivo
-\texttt{.ino}: o exemplo canônico da Listagem~\ref{lst:controle}
-(\texttt{controle\_nfc.tupa}) e o teste de hardware em Tupã
-(\texttt{teste\_hardware.tupa}), que usa os eventos novos e \texttt{escrever}.
-Os dois arquivos gerados e o \texttt{teste\_hardware.ino} escrito à mão
-compilam sem erro com a Arduino CLI para a placa ESP32 Wrover Module
+As quatro fases do compilador estão implementadas, e um conjunto de 98
+testes automatizados, 41 do compilador, 46 do catálogo de erros e 11 da API do
+ambiente web, é executado com sucesso. Dois programas são traduzidos de ponta
+a ponta até um arquivo \texttt{.ino}: o exemplo canônico da
+Listagem~\ref{lst:controle} (\texttt{controle\_nfc.tupa}) e o teste de
+hardware em Tupã (\texttt{teste\_hardware.tupa}), que usa os eventos novos e
+\texttt{escrever}. Os dois arquivos gerados e os dois firmwares escritos à mão
+compilam sem erro nem aviso com a Arduino CLI para a placa ESP32 Wrover Module
 (\texttt{esp32:esp32:esp32wrover}).
 
 O teste de bancada, de 26/10/2026, foi feito com o firmware escrito à mão
@@ -463,6 +901,29 @@ de uma tag RFID; (c) Monitor Serial registrando eventos do sensor IR, do botão
 e os UIDs lidos.}
 \label{fig:prototipo}
 \end{figure}
+
+O segundo programa, \texttt{teste\_hardware.tupa}
+(Listagem~\ref{lst:teste}), reproduz em Tupã o firmware manual de bancada e
+exercita os quatro eventos. Suas 23 linhas de código geram um \textit{sketch}
+que acende cada LED por 700~ms na partida e registra no Serial cada aperto do
+botão, cada mudança do sensor IR e o UID de cada cartão lido. O evento
+\texttt{ao obstaculo} não precisa de corpo, porque o \textit{log} sai sozinho.
+
+\begin{lstlisting}[language=Tupa, basicstyle=\ttfamily\tiny, caption={Resumo de \texttt{teste\_hardware.tupa}.}, label={lst:teste}]
+dispositivo teste_hardware {
+    ao iniciar {
+        escrever("== Teste de hardware Tupa ==");
+        led.verde();    esperar(700);
+        led.vermelho(); esperar(700);
+    }
+    ao botao(1) { led.vermelho(); esperar(300); }
+    ao obstaculo { }
+    ao cartao {
+        escrever("Cartao UID: " + cartao.uid);
+        led.verde();  esperar(800);
+    }
+}
+\end{lstlisting}
 
 A Tabela~\ref{tab:comparacao} compara os programas em Tupã com o C++ gerado e,
 para o teste de hardware, com o C++ que seria escrito à mão
@@ -503,8 +964,89 @@ conhecida de comportamento: o firmware manual mantém o LED vermelho aceso
 enquanto o botão está apertado, e o programa em Tupã o acende por 300~ms a cada
 aperto.
 
+A Tabela~\ref{tab:memoria} traz o uso de memória medido pela Arduino CLI. O
+código gerado custa cerca de 2~KB de flash e 24 bytes de RAM a mais que o
+manual equivalente, uma diferença desprezível diante dos cerca de 290~KB do
+núcleo do ESP32.
+
+\begin{table}[htbp]
+\caption{Uso de memória na ESP32 Wrover Module (Arduino CLI 1.5.1, núcleo 3.3.12)}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Sketch} & \textbf{Flash (B)} & \textbf{RAM (B)} \\
+\midrule
+\texttt{controle\_nfc} gerado & 293\,740 (22\%) & 22\,308 (6\%) \\
+\texttt{teste\_hardware} gerado & 293\,880 (22\%) & 22\,308 (6\%) \\
+\texttt{controle\_nfc} manual & 291\,776 (22\%) & 22\,284 (6\%) \\
+\texttt{teste\_hardware} manual & 292\,548 (22\%) & 22\,300 (6\%) \\
+\bottomrule
+\end{tabular}
+\label{tab:memoria}
+\end{center}
+\end{table}
+
+A Tabela~\ref{tab:testes} resume as métricas de verificação. Os campos
+marcados com TODO dependem da gravação do \texttt{.ino} gerado na placa.
+
+\begin{table}[htbp]
+\caption{Métricas de verificação do projeto}
+\begin{center}
+\footnotesize
+\begin{tabular}{lr}
+\toprule
+\textbf{Métrica} & \textbf{Valor} \\
+\midrule
+Tipos de \textit{token} & 44 \\
+Tipos de nó da AST & 17 \\
+Códigos de erro catalogados & 40 \\
+Testes do compilador & 41 \\
+Testes do catálogo de erros & 46 \\
+Testes da API web & 11 \\
+Sketches compilados sem erro & 4 de 4 \\
+Teste de bancada com o 	exttt{.ino} gerado & \% TODO (placa) \\
+Taxa de acerto no teste de bancada com o gerado & TODO (placa) \% \\
+\bottomrule
+\end{tabular}
+\label{tab:testes}
+\end{center}
+\end{table}
+
 % TODO: tempo de compilação e de gravação na placa (medir com arduino-cli).
 % TODO: testes com usuários, se houver.
+
+% ===============================================================
+\section{Discussão e Limitações}\label{sec:discussao}
+% ===============================================================
+Os resultados indicam que a DSL cumpre o papel de esconder a configuração do
+hardware: o usuário escreve de 12 a 23 linhas, e o compilador devolve de 100 a
+112 linhas de C++ com \textit{debounce}, \textit{timeout}, encerramento do
+cartão e verificação do leitor, itens em que iniciantes costumam errar. O
+custo em memória é pequeno, e o catálogo de erros move para o tempo de
+compilação falhas que, em C++, só apareceriam na placa.
+
+As limitações são as seguintes. (i) Só há suporte à ESP32-WROVER-DEV; outras
+placas exigem um novo arquivo JSON e, possivelmente, ajustes no gerador. (ii)
+O compilador reporta um erro por vez e não se recupera de erros sintáticos.
+(iii) O módulo \texttt{ir} é só de sensor de obstáculo, sem transmissão de
+infravermelho nem controle remoto. (iv) Não há atualização do firmware por
+Wi-Fi (OTA); a gravação é manual, pela Arduino CLI. (v) A linguagem não foi
+avaliada com usuários, de modo que a hipótese de ganho didático ainda não foi
+testada. (vi) O código gerado compila, mas ainda não foi gravado na placa,
+portanto seu comportamento no hardware não foi verificado. Por fim, as
+métricas de linhas dependem do estilo de formatação do gerador e comparam com
+um único firmware manual de referência, o que limita a generalização.
+
+Quanto à validade dos resultados, a redução de linhas mede esforço de
+digitação, e não esforço cognitivo: ela não prova que o Tupã seja mais fácil de
+aprender, apenas que ele dispensa código repetitivo. A comparação com C++ usa
+um firmware manual escrito pelos próprios autores, que poderiam tê-lo escrito
+de modo mais enxuto ou mais robusto. Além disso, o teste de bancada validou o
+hardware e a pinagem, e não o código gerado. Por isso, os números de memória e
+de linhas devem ser lidos como evidência de viabilidade, e não como avaliação
+definitiva.
 
 % ===============================================================
 \section{Conclusão e Trabalhos Futuros}\label{sec:conclusao}
@@ -512,7 +1054,7 @@ aperto.
 Este artigo apresentou o Tupã, uma linguagem de domínio específico em
 português para programação de microcontroladores ESP32, e seu compilador,
 que percorre as quatro fases clássicas de compilação e gera C++ compatível
-com o ecossistema Arduino. Os resultados preliminares indicam que a
+com o ecossistema Arduino. Os resultados indicam que a
 linguagem reduz significativamente a quantidade de código que o usuário
 precisa escrever e elimina a configuração manual do hardware, enquanto a
 análise semântica orientada a módulos detecta erros antes da gravação. O
@@ -526,10 +1068,9 @@ Os próximos passos incluem: gravar na placa o código gerado por
 \texttt{controle\_nfc.tupa} e \texttt{teste\_hardware.tupa} e comparar seu
 comportamento com o do firmware manual; automatizar a compilação e a gravação a
 partir do comando \texttt{tupa build}; ampliar os módulos suportados, como o
-envio de infravermelho, hoje fora do escopo; documentar a linguagem e o
-compilador no repositório Git; e, fora do escopo do MVP, permitir a
-atualização do firmware por Wi-Fi (OTA). Também se pretende avaliar o uso da
-linguagem em contexto de ensino de sistemas embarcados.
+envio de infravermelho, hoje fora do escopo; suportar outras placas além da
+ESP32-WROVER; permitir a atualização do firmware por Wi-Fi (OTA); e avaliar o
+uso da linguagem com estudantes em contexto de ensino de sistemas embarcados.
 
 \section*{Agradecimentos}
 Os autores agradecem ao professor da disciplina de Linguagens Formais e
@@ -537,18 +1078,26 @@ Compiladores do IBMEC pela orientação. % TODO: nome do professor (so o Joao sa
 
 % ---------------------------------------------------------------
 % Referências
-% Referencias: anos e paginas conferidos de memoria, URLs NAO testadas online; ver lista de pendencias.
+% Revisadas em 08/11/2026: Mernik, Resnick, Hudak, Devine, Fraser e Esteves conferidas via Crossref; Fowler (livro) pelo catalogo da editora.
 % ---------------------------------------------------------------
 \begin{thebibliography}{00}
 \bibitem{aho} A. V. Aho, M. S. Lam, R. Sethi, and J. D. Ullman, \textit{Compilers: Principles, Techniques, and Tools}, 2nd ed. Boston, MA: Addison-Wesley, 2006.
+\bibitem{mernik} M. Mernik, J. Heering, and A. M. Sloane, ``When and how to develop domain-specific languages,'' \textit{ACM Comput. Surv.}, vol. 37, no. 4, pp. 316--344, Dec. 2005.
+\bibitem{fowler} M. Fowler, \textit{Domain-Specific Languages}. Upper Saddle River, NJ: Addison-Wesley, 2010.
+\bibitem{hudak} P. Hudak, ``Building domain-specific embedded languages,'' \textit{ACM Comput. Surv.}, vol. 28, no. 4es, art. 196, Dec. 1996.
+\bibitem{scratch} M. Resnick \textit{et al.}, ``Scratch: programming for all,'' \textit{Commun. ACM}, vol. 52, no. 11, pp. 60--67, Nov. 2009.
 \bibitem{arduino} Arduino, ``Arduino language reference.'' [Online]. Available: \url{https://docs.arduino.cc/language-reference/}. Acesso em: nov. 2026.
 \bibitem{arduinocli} Arduino, ``Arduino CLI.'' [Online]. Available: \url{https://arduino.github.io/arduino-cli/}. Acesso em: nov. 2026.
 \bibitem{makecode} J. Devine, J. Finney, P. de Halleux, M. Moskal, T. Ball, and S. Hodges, ``MakeCode and CODAL: intuitive and efficient embedded systems programming for education,'' \textit{J. Syst. Archit.}, vol. 98, pp. 468--483, 2019.
 \bibitem{blockly} N. Fraser, ``Ten things we've learned from Blockly,'' in \textit{Proc. IEEE Blocks and Beyond Workshop}, 2015, pp. 49--50.
 \bibitem{flipper} Flipper Devices, ``Flipper Zero.'' [Online]. Available: \url{https://flipperzero.one/}. Acesso em: nov. 2026.
-\bibitem{portugol} L. H. Noschang, A. Pelz, E. A. Raabe, and A. L. A. Raabe, ``Portugol Studio: uma IDE para iniciantes em programação,'' in \textit{Anais do Workshop sobre Educação em Computação (WEI/CSBC)}, 2014.
+\bibitem{portugol} A. Esteves, L. Noschang, A. Raabe, and A. Filho, ``Portugol Studio: em direção a uma comunidade aberta para pesquisa sobre o aprendizado de programação,'' in \textit{Anais do Workshop sobre Educação em Computação (WEI/CSBC)}, 2019, pp. 513--522.
 \bibitem{esp32} Espressif Systems, ``ESP32 series datasheet.'' [Online]. Available: \url{https://www.espressif.com/en/support/documents/technical-documents}. Acesso em: nov. 2026.
 \bibitem{mfrc522} NXP Semiconductors, ``MFRC522: standard performance MIFARE and NTAG frontend,'' product data sheet. % TODO: ano/revisao e URL do datasheet
+\bibitem{fastapi} S. Ramírez, ``FastAPI.'' [Online]. Available: \url{https://fastapi.tiangolo.com/}. Acesso em: nov. 2026.
+\bibitem{react} Meta Open Source, ``React.'' [Online]. Available: \url{https://react.dev/}. Acesso em: nov. 2026.
+\bibitem{docker} Docker, Inc., ``Docker.'' [Online]. Available: \url{https://www.docker.com/}. Acesso em: nov. 2026.
+\bibitem{mit} Open Source Initiative, ``The MIT License.'' [Online]. Available: \url{https://opensource.org/license/mit}. Acesso em: nov. 2026.
 \end{thebibliography}
 
 \end{document}

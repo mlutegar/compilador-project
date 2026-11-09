@@ -145,3 +145,20 @@ Diário de decisões e mudanças.
 - `arduino-cli` não está no PATH; fica em `C:/Users/mlute/arduino-cli-bin/`.
 - P08 e P15 não têm registro: ficaram como "sem registro" e "pendente" no `PROMPTS.md`.
 - Falta gravar o `.ino` gerado na placa e conferir o site no navegador (só o build foi feito).
+
+---
+
+## P15 · Artigo expandido de 5 para 9 páginas (08/11/2026) · concluído
+
+**Resultado**
+- `artigo/main.tex` (IEEEtran conference) passou de 5 para **9 páginas**, `latexmk -pdf` sem erros, sem `??` e sem referência indefinida.
+- Seções novas: Objetivos (geral e 6 específicos); Fundamentação (DSLs internas x externas, fases, transpilação, ESP32/Arduino); Metodologia (processo, cronograma, ferramentas, testes, Git); Ambiente Web; Plataforma de Hardware (pinagem, materiais, foto); Discussão e Limitações.
+- Léxico: tabela dos 44 tokens (table*), regex mestre resumida, tokenização real de `cartao = nfc.ler();`. Sintático: EBNF, 17 nós, AST do controle_nfc em TikZ. Semântico: escopos, tabela de símbolos, API de hardware, resumo da Tabela de Erros (40 códigos: 1 L, 13 S, 21 E, 5 G) e erros E19 e E04 reais. Geração: trecho do JSON da placa, tabela evento para C++, trecho do `.ino` gerado.
+- Resultados: 98 testes (41 + 46 + 11, número atual, não 41+9), memória flash/RAM de `docs/compilacao.md`, tabela de métricas.
+- Referências conferidas no Crossref: Mernik et al. 2005, Resnick et al. 2009, Hudak 1996, Devine et al. 2019, Fraser 2015. Fowler (2010) é livro, sem DOI. Acrescentei FastAPI, React, Docker e MIT (URLs com HTTP 200).
+
+**Avisos**
+- A referência do Portugol Studio foi trocada: o artigo de 2014 que constava não foi achado no Crossref; usei o de 2019 (Esteves et al., WEI), que existe. Os autores listados vêm do Crossref.
+- A figura de erro agora mostra o formato real com código, `[E19]`, linha 3 coluna 12 (antes era um exemplo antigo, linha 11).
+- O cronograma usa só os meses do `Cronograma.md` (placeholder do Obsidian), sem datas exatas. O custo de R$ 120 é estimativa de varejo, não nota fiscal.
+- Mantidos os `% TODO`: e-mails de Michel e André, domínio do e-mail do Guilherme, nome do professor, datasheet MFRC522, tempo de compilação/gravação, testes com usuários e `% TODO (placa)` (gravação do `.ino` gerado).
