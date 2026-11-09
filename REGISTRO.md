@@ -99,3 +99,14 @@ Diário de decisões e mudanças.
 - Parte B: novo `README.md` (logo, link do playground, screenshot em `docs/img/playground.png`, exemplo, métricas, pipeline, linguagem, hardware, como começar).
 - Parte C: P06 marcado como concluído; P10 e P11 adicionados.
 - Licença ainda indefinida: README diz "Licença: a definir".
+
+---
+
+## P12 · URL oficial, licença MIT e site (08/11/2026) · concluído
+
+**Resultado**
+- URL oficial: https://tupa.mlutegar.com (substituída em README e REGISTRO; nenhuma ocorrência restante do domínio antigo).
+- `LICENSE` MIT (Michel Lutegar, André Costa, Felipe Dutrain, Guilherme Lopes); `pyproject.toml` com `license = "MIT"` (setuptools>=77); README aponta para o LICENSE.
+- Site: rodapé com licença, disciplina, autores e link do GitHub (repositório público); nova aba "Como gravar" (5 passos + tabela de pinagem do ESP32-WROVER).
+- Download conferido: sai como `<programa>.ino` (ex.: `controle_nfc.ino`).
+- Testes: 50 passed; build do front sem erro. Screenshot: `docs/img/site-como-gravar.png`.
