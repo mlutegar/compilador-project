@@ -2,7 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import Editor from "./Editor.jsx";
 import Arvore from "./Arvore.jsx";
 
-const ABAS = ["Tokens", "AST", "Erros", "C++", "Métricas"];
+const ABAS = ["Tokens", "AST", "Erros", "C++", "Métricas", "Como gravar"];
+const PINOS = [
+  ["RC522 SS (SDA)", "GPIO 5"], ["RC522 RST", "GPIO 22"], ["RC522 SCK", "GPIO 18"],
+  ["RC522 MISO", "GPIO 19"], ["RC522 MOSI", "GPIO 23"], ["LED verde", "GPIO 25"],
+  ["LED vermelho", "GPIO 26"], ["Sensor IR (ativo em LOW)", "GPIO 34"],
+  ["Botão 1 (INPUT_PULLUP)", "GPIO 4"],
+];
+const AUTORES = "Michel Lutegar, André Costa, Felipe Dutrain, Guilherme Lopes";
 
 async function api(caminho, opcoes) {
   const r = await fetch(caminho, opcoes);
@@ -115,7 +122,7 @@ export default function App() {
             ))}
           </nav>
           <div className="conteudo">
-            {!res ? (
+            {aba === "Como gravar" ? <ComoGravar nome={nome} /> : !res ? (
               <p className="vazio">Clique em “Compilar” para ver o resultado.</p>
             ) : (
               <>
@@ -137,7 +144,32 @@ export default function App() {
           </div>
         </section>
       </main>
-      <footer>Compilador Tupã · só gera o .ino — compile e grave com a Arduino CLI.</footer>
+      <footer>
+        <span>Tupã · <a href="https://github.com/mlutegar/compilador-project/blob/main/LICENSE" target="_blank" rel="noreferrer">Licença MIT</a> · Linguagens Formais e Compiladores, IBMEC</span>
+        <span>{AUTORES} · <a href="https://github.com/mlutegar/compilador-project" target="_blank" rel="noreferrer">GitHub</a></span>
+      </footer>
+    </div>
+  );
+}
+
+function ComoGravar({ nome }) {
+  const base = (nome || "programa").replace(/\.[^.]+$/, "");
+  return (
+    <div className="gravar">
+      <ol>
+        <li>Compile e clique em <b>Baixar .ino</b> (o arquivo sai como <code>{base}.ino</code>).</li>
+        <li>Abra o arquivo na <b>Arduino IDE</b> e aceite criar a pasta <code>{base}</code>.</li>
+        <li>Placa <b>ESP32 Wrover Module</b> e instale a biblioteca <b>MFRC522</b> (GithubCommunity).</li>
+        <li>Clique em <b>Upload</b>. Se travar em “Connecting…”, segure o botão <b>BOOT</b> da placa.</li>
+        <li>Abra o <b>Monitor Serial</b> em <b>115200</b> baud e aproxime a tag.</li>
+      </ol>
+      <h3>Pinagem (ESP32-WROVER)</h3>
+      <div className="tabela-wrap">
+        <table>
+          <thead><tr><th>Componente</th><th>Pino</th></tr></thead>
+          <tbody>{PINOS.map(([c, p]) => <tr key={c}><td>{c}</td><td><code>{p}</code></td></tr>)}</tbody>
+        </table>
+      </div>
     </div>
   );
 }
