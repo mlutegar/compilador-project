@@ -64,9 +64,15 @@ Diário de decisões e mudanças.
 
 ---
 
-## P06 · Deploy no VPS · pendente
+## P06 · Deploy no VPS (08/11/2026) · concluído
 
-Bloqueado em 08/11/2026 porque o push não tinha sido feito e faltava o guia de deploy do VPS (mantido fora do repo). Destravado pelo P09 e P10.
+**Resultado**
+- Container `tupa-tupa-1` rodando e `healthy`, publicado só em `127.0.0.1:8000` (proxy reverso na frente).
+- Acesso ao repositório pelo VPS com deploy key `~/.ssh/tupa_deploy` e alias SSH `github-tupa`.
+- URL pública: https://tupa.mrender.com.br
+- Validações feitas: `/api/saude` responde `ok` pela URL pública; compilação do exemplo canônico pelo playground; healthcheck do container verde.
+- `deploy-git.ps1`: `git push origin main`, depois `git pull`, build e `docker compose up -d` no VPS pelo alias `ssh kvm8`.
+- Dados do servidor (IP, host, guia de deploy) ficam fora do repositório.
 
 ---
 
@@ -76,3 +82,20 @@ Bloqueado em 08/11/2026 porque o push não tinha sido feito e faltava o guia de 
 - `.gitignore`: `obsidian-compilador-esp32/` e `tupa_pacote_08-11.zip` ficam fora do repositório.
 - `REGISTRO.md`: entrada do P01 adicionada.
 - `artigo/main.pdf` recompilado e versionado (124544 -> 386994 bytes).
+
+---
+
+## P10 · Push (08/11/2026) · concluído · commit fc1a250
+
+**Resultado**
+- Push de `main` para `origin` com o registro completo P01 a P10 (`fc1a250`), liberando o deploy do P06.
+
+---
+
+## P11 · README, registro do deploy e limpeza de infraestrutura (08/11/2026) · concluído
+
+**Resultado**
+- Parte A: varredura do repositório rastreado (IP, nome do host, provedor, `root@`, chaves SSH): nenhuma ocorrência de dado sensível; `docs/deploy-kvm8.md` não estava rastreado e agora está no `.gitignore`. Histórico do git limpo (`git log -S` sem resultados). Histórico não reescrito.
+- Parte B: novo `README.md` (logo, link do playground, screenshot em `docs/img/playground.png`, exemplo, métricas, pipeline, linguagem, hardware, como começar).
+- Parte C: P06 marcado como concluído; P10 e P11 adicionados.
+- Licença ainda indefinida: README diz "Licença: a definir".
