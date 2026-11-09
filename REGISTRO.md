@@ -69,7 +69,7 @@ Diário de decisões e mudanças.
 **Resultado**
 - Container `tupa-tupa-1` rodando e `healthy`, publicado só em `127.0.0.1:8000` (proxy reverso na frente).
 - Acesso ao repositório pelo VPS com deploy key `~/.ssh/tupa_deploy` e alias SSH `github-tupa`.
-- URL pública: https://tupa.mrender.com.br
+- URL pública: https://tupa.mlutegar.com
 - Validações feitas: `/api/saude` responde `ok` pela URL pública; compilação do exemplo canônico pelo playground; healthcheck do container verde.
 - `deploy-git.ps1`: `git push origin main`, depois `git pull`, build e `docker compose up -d` no VPS pelo alias `ssh kvm8`.
 - Dados do servidor (IP, host, guia de deploy) ficam fora do repositório.
