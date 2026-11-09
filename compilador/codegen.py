@@ -34,6 +34,7 @@ class GeradorC:
         self.usa_led = False
         self.usa_ir = False
         self.usa_botao_pressionado = False
+        self.tem_evento_ir = False  # 'ao obstaculo' (precisa de estado para a borda)
         self.botoes = []           # números dos botões usados em eventos
         self.declaradas = set()    # variáveis já declaradas no escopo C++ atual
         self.ativo_botao = self.placa.eletrica["botao"]["ativo_em"]
@@ -60,9 +61,11 @@ class GeradorC:
         self._detectar_hardware(self.prog)
 
         globais = [c for c in self.prog.corpo if isinstance(c, A.DeclVar)]
-        eventos = [c for c in self.prog.corpo if isinstance(c, A.Evento)]
-        outros = [c for c in self.prog.corpo
-                  if not isinstance(c, (A.DeclVar, A.Evento))]
+        eventos = [c for c in self.prog.corpo
+                   if isinstance(c, A.Evento) and c.tipo_evento != "iniciar"]
+        # setup(): 'ao iniciar' e comandos soltos do topo, na ordem do fonte
+        outros = [c for c in self.prog.corpo if not isinstance(c, (A.DeclVar,))
+                  and (not isinstance(c, A.Evento) or c.tipo_evento == "iniciar")]
         for ev in eventos:
             if ev.tipo_evento == "botao" and ev.numero not in self.botoes:
                 self.botoes.append(ev.numero)
@@ -87,6 +90,12 @@ class GeradorC:
 
     # ---------- deteção ----------
     def _detectar_hardware(self, no):
+        if isinstance(no, A.Evento):
+            if no.tipo_evento == "obstaculo":
+                self.usa_ir = True
+                self.tem_evento_ir = True
+            elif no.tipo_evento == "cartao":
+                self.usa_nfc = True
         if isinstance(no, A.Chamada) and isinstance(no.alvo, A.AcessoMembro) \
                 and isinstance(no.alvo.objeto, A.Hardware):
             mod, met = no.alvo.objeto.nome, no.alvo.membro
@@ -148,14 +157,17 @@ class GeradorC:
         return L
 
     def _estado_botoes(self):
-        if not self.botoes:
-            return []
-        ini = self._inativo(self.ativo_botao)
-        L = ["// ---- Estado dos botões (debounce por millis, sem delay) ----"]
-        for n in self.botoes:
-            L.append(f"int botao{n}_leitura = {ini}, botao{n}_estavel = {ini};")
-            L.append(f"unsigned long botao{n}_mudou = 0;")
-        L.append("")
+        L = []
+        if self.botoes:
+            ini = self._inativo(self.ativo_botao)
+            L.append("// ---- Estado dos botões (debounce por millis, sem delay) ----")
+            for n in self.botoes:
+                L.append(f"int botao{n}_leitura = {ini}, botao{n}_estavel = {ini};")
+                L.append(f"unsigned long botao{n}_mudou = 0;")
+            L.append("")
+        if self.tem_evento_ir:
+            L += ["// ---- Estado do sensor IR (detecta a borda livre -> obstáculo) ----",
+                  f"int ir_anterior = {self._inativo(self.ativo_ir)};", ""]
         return L
 
     def _auxiliares(self):
@@ -264,7 +276,11 @@ class GeradorC:
                 '                  ? "FALHA: confira SPI, RST e 3.3V" : "OK");',
             ]
         for c in outros:
-            L.append(self._comando(c, 1))
+            if isinstance(c, A.Evento):          # ao iniciar { ... }
+                L.append(f"  {self._ref(c)} ao iniciar")
+                L += self._corpo_evento(c, 1)
+            else:
+                L.append(self._comando(c, 1))
         L.append("}")
         return L
 
@@ -291,7 +307,40 @@ class GeradorC:
     def _evento(self, ev):
         if ev.tipo_evento == "botao":
             return self._evento_botao(ev)
+        if ev.tipo_evento == "obstaculo":
+            return self._evento_obstaculo(ev)
+        if ev.tipo_evento == "cartao":
+            return self._evento_cartao(ev)
         return [f"  // (evento não traduzido: {ev.tipo_evento})"]
+
+    def _evento_obstaculo(self, ev):
+        ativo = self.ativo_ir
+        L = [
+            f"  {self._ref(ev)} ao obstaculo (borda: livre -> obstáculo detectado)",
+            "  {",
+            "    int leitura = digitalRead(IR_PIN);",
+            "    if (leitura != ir_anterior) {",
+            "      ir_anterior = leitura;",
+            f"      if (leitura == {ativo}) {{",
+            '        Serial.println("IR: obstaculo detectado");',
+        ]
+        L += self._corpo_evento(ev, 4)
+        L += ["      } else {", '        Serial.println("IR: livre");', "      }",
+              "    }", "  }"]
+        return L
+
+    def _evento_cartao(self, ev):
+        L = [
+            f"  {self._ref(ev)} ao cartao (cartão novo lido; a variável 'cartao' existe no bloco)",
+            "  {",
+            "    Cartao cartao;",
+            "    if (nfcTentar(cartao)) {",
+        ]
+        with self._escopo():
+            self.declaradas.add("cartao")
+            L += self._corpo_evento(ev, 3)
+        L += ["    }", "  }"]
+        return L
 
     def _evento_botao(self, ev):
         n = ev.numero
@@ -325,6 +374,8 @@ class GeradorC:
             return self._repetir(no, indent)
         if isinstance(no, A.Esperar):
             return f"{pad}delay({self._expr(no.tempo)});"
+        if isinstance(no, A.Escrever):
+            return f"{pad}Serial.println({self._expr(no.valor)});"
         if isinstance(no, A.Retornar):
             return f"{pad}return;" if no.valor is None else f"{pad}return {self._expr(no.valor)};"
         if isinstance(no, A.ExprComando):

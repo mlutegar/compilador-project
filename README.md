@@ -136,7 +136,7 @@ compiladores-projeto/
 
 | Documento | Descrição |
 |-----------|-----------|
-| [Tabela de Tokens](docs/tabela-de-tokens.md) | Todos os 43 tokens da linguagem com lexemas, regex e descrições |
+| [Tabela de Tokens](docs/tabela-de-tokens.md) | Todos os 44 tokens da linguagem (43 + EOF) com lexemas, regex e descrições |
 | [Exemplos de Tokenização](docs/exemplos-tokenizacao.md) | 7 exemplos completos de como o lexer processa o código |
 | [Especificação Léxica](docs/especificacao-lexica.md) | Regras de reconhecimento, prioridade de padrões e tratamento de erros |
 
@@ -158,24 +158,58 @@ compiladores-projeto/
 
 ```bash
 # Análise léxica — lista os tokens
-python tupa.py tokens examples/controle_nfc.tupa
+python -m compilador tokens examples/controle_nfc.tupa
 
 # Análise sintática — imprime a AST
-python tupa.py ast examples/controle_nfc.tupa
+python -m compilador ast examples/controle_nfc.tupa
 
-# Compilar (back-end) — gera output/controle_nfc.ino
-python tupa.py build examples/controle_nfc.tupa
+# Compilar (back-end) — grava <pasta>/<pasta>.ino (formato que o arduino-cli exige)
+python -m compilador build examples/controle_nfc.tupa -o firmware/controle_nfc_gerado
+python -m compilador build examples/teste_hardware.tupa -o firmware/teste_hardware_gerado
+#   --placa esp32_wrover   placa-alvo (padrão); lê compilador/placas/<nome>.json ou um caminho .json
 
-# Testes automatizados (11)
-python tests/test_compilador.py
+# Testes automatizados (compilador + API web)
+python -m pytest tests -q
 ```
 
-Depois de gerar o `.ino`, compilar e gravar na placa:
+### Hardware real e placa
+
+O protótipo é um **ESP32-WROVER-DEV** (placa "ESP32 Wrover Module", FQBN `esp32:esp32:esp32wrover`),
+com RC522 (biblioteca MFRC522), botão, LEDs verde/vermelho e sensor IR de obstáculo. A pinagem conferida em
+bancada está em [`firmware/pinagem.md`](firmware/pinagem.md) e em `compilador/placas/esp32_wrover.json`
+(o compilador lê os pinos e a lista de UIDs autorizados desse arquivo).
+
+### Instalar o arduino-cli, o core ESP32 e a biblioteca
 
 ```bash
-arduino-cli compile --fqbn esp32:esp32:esp32 output/
-arduino-cli upload  --fqbn esp32:esp32:esp32 -p COM3 output/
+# Windows (sem admin): baixe arduino-cli_<versao>_Windows_64bit.zip em
+# https://github.com/arduino/arduino-cli/releases e coloque o arduino-cli.exe no PATH.
+# Ou: winget install ArduinoSA.CLI   |   choco install arduino-cli
+
+arduino-cli config init
+arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli core update-index
+arduino-cli core install esp32:esp32        # ~ 1 GB; testado com esp32:esp32 3.3.12
+arduino-cli lib install MFRC522             # testado com 1.4.12
 ```
+
+### Compilar e gravar na placa
+
+```bash
+# compilar (valida o .ino sem a placa)
+arduino-cli compile --fqbn esp32:esp32:esp32wrover firmware/controle_nfc_gerado
+arduino-cli compile --fqbn esp32:esp32:esp32wrover firmware/teste_hardware_gerado
+
+# descobrir a porta e gravar
+arduino-cli board list
+arduino-cli upload -p COMx --fqbn esp32:esp32:esp32wrover firmware/controle_nfc_gerado
+
+# acompanhar o Serial (115200)
+arduino-cli monitor -p COMx -c baudrate=115200
+```
+
+O firmware manual `firmware/teste_hardware.ino` também compila: copie-o para uma pasta `teste_hardware/`
+(o arduino-cli exige pasta com o mesmo nome do `.ino`) e rode o mesmo `compile`.
 
 Fases documentadas em [`docs/analise-sintatica-ast.md`](docs/analise-sintatica-ast.md) e [`docs/analise-semantica-e-codegen.md`](docs/analise-semantica-e-codegen.md).
 

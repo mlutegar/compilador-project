@@ -47,14 +47,22 @@ function linguagemTupa(palavras) {
   const hw = new Set(nomes.filter((n) => ["nfc", "ir", "led", "botao"].includes(n)));
   const atomos = new Set(["verdadeiro", "falso"]);
   const kw = new Set(nomes.filter((n) => !tipos.has(n) && !hw.has(n) && !atomos.has(n)));
+  // Nomes de evento (ao iniciar / ao obstaculo / ao cartao) são palavras contextuais:
+  // só ganham destaque logo depois de "ao", para não colorir a variável "cartao".
+  const eventos = new Set(["iniciar", "obstaculo", "cartao"]);
   return StreamLanguage.define({
-    token(stream) {
+    startState: () => ({ aposAo: false }),
+    token(stream, state) {
       if (stream.eatSpace()) return null;
+      const aposAo = state.aposAo;
+      state.aposAo = false;
       if (stream.peek() === "#") { stream.skipToEnd(); return "comment"; }
       if (stream.match(/^"[^"\n]*"/)) return "string";
       if (stream.match(/^[0-9]+(\.[0-9]+([eE][+-]?[0-9]+)?)?/)) return "number";
       if (stream.match(/^[a-zA-Z][a-zA-Z0-9_]*/)) {
         const w = stream.current();
+        if (w === "ao") state.aposAo = true;
+        if (aposAo && eventos.has(w)) return "keyword";
         if (kw.has(w)) return "keyword";
         if (tipos.has(w)) return "typeName";
         if (atomos.has(w)) return "atom";

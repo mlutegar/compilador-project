@@ -20,14 +20,18 @@ Percorre a AST validando:
 | Módulo | Métodos | Propriedades (via objeto) |
 |--------|---------|---------------------------|
 | `led`  | `verde()`, `vermelho()`, `apagar()` | — |
-| `nfc`  | `ler()` → objeto `cartao` | `cartao.valido`, `cartao.id` |
-| `ir`   | `enviar(codigo)`, `receber()` | — |
+| `nfc`  | `ler()` → objeto `cartao` | `cartao.valido`, `cartao.uid` |
+| `ir`   | `detectado()` (sensor de obstáculo; não existe IR TX) | — |
 | `botao`| `pressionado()` | — |
+
+Também valida: nome de evento (`ao iniciar`, `ao botao(N)`, `ao obstaculo`, `ao cartao`), evento repetido,
+botão sem pino na placa e o argumento de `escrever` (não imprime `cartao` inteiro nem chamada sem valor).
+Dentro de `ao cartao` a variável `cartao` já existe.
 
 ### Exemplo de erro amigável
 
 ```
-$ python tupa.py build erro.tupa
+$ python -m compilador build erro.tupa
 
 erro semantico - linha 3, coluna 12
     metodo inexistente no modulo 'led'
@@ -49,8 +53,12 @@ Traduz a AST validada para **C++/Arduino (`.ino`)** pronto para a Arduino CLI.
 |------|-------------|
 | `dispositivo X { ... }` | comentário + `setup()` + `loop()` |
 | `inteiro/decimal/texto/booleano` | `int` / `float` / `String` / `bool` |
-| `ao botao(1) { ... }` | `if (digitalRead(BOTAO_1)==LOW) { ...debounce... }` dentro do `loop()` |
-| `cartao = nfc.ler();` | `Cartao cartao = nfcLer();` |
+| `ao iniciar { ... }` | corpo do `setup()` (depois de inicializar o hardware) |
+| `ao botao(1) { ... }` | debounce por `millis()` com detecção de borda, dentro do `loop()` |
+| `ao obstaculo { ... }` | borda livre -> obstáculo em `digitalRead(IR_PIN)` |
+| `ao cartao { ... }` | `Cartao cartao; if (nfcTentar(cartao)) { ... }` |
+| `escrever(x);` | `Serial.println(x);` |
+| `cartao = nfc.ler();` | `Cartao cartao = nfcLer();` (espera até 3 s; sem cartão = inválido) |
 | `cartao.valido == verdadeiro` | `(cartao.valido == true)` |
 | `led.verde();` | `ledVerde();` |
 | `esperar(1500);` | `delay(1500);` |
@@ -59,31 +67,33 @@ Traduz a AST validada para **C++/Arduino (`.ino`)** pronto para a Arduino CLI.
 
 O back-end emite automaticamente os `#include`, os `#define` de pinos, os
 helpers (`ledVerde`, `nfcLer`, …) e o `setup()` — código que o usuário nunca
-escreve. Bibliotecas de hardware entram só quando usadas (ex.: `MFRC522` apenas
-se `nfc` aparecer).
+escreve. Só entram os módulos usados (ex.: `MFRC522`/`SPI` apenas se houver `nfc` ou `ao cartao`).
+Pinos, SPI, FQBN, tempo de espera do NFC e UIDs autorizados vêm de `compilador/placas/<placa>.json`
+(flag `--placa`, padrão `esp32_wrover`). O cabeçalho diz de qual `.tupa` o código veio e cada bloco
+tem um comentário `// [arquivo.tupa:linha]`.
 
 ### Rodar o back-end
 
 ```bash
-python tupa.py build examples/controle_nfc.tupa
-# -> output/controle_nfc.ino
+python -m compilador build examples/controle_nfc.tupa -o firmware/controle_nfc_gerado
+# -> firmware/controle_nfc_gerado/controle_nfc_gerado.ino  (pasta homônima, como o arduino-cli exige)
 ```
 
 Depois, compilar/enviar para a placa (fora do compilador):
 
 ```bash
-arduino-cli compile --fqbn esp32:esp32:esp32 output/
-arduino-cli upload  --fqbn esp32:esp32:esp32 -p COM3 output/
+arduino-cli compile --fqbn esp32:esp32:esp32wrover firmware/controle_nfc_gerado
+arduino-cli upload -p COMx --fqbn esp32:esp32:esp32wrover firmware/controle_nfc_gerado
 ```
 
 ---
 
 ## Testes
 
-`tests/test_compilador.py` cobre lexer, parser, semântica e codegen (11 testes).
+`tests/test_compilador.py` cobre lexer, parser, semântica e codegen (inclui snapshots dos `.ino` gerados);
+`tests/test_web_api.py` cobre a API do playground.
 
 ```bash
-python tests/test_compilador.py     # runner embutido, sem dependências
-# ou
 python -m pytest tests/ -q
+```
 ```

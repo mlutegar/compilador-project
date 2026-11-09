@@ -42,6 +42,9 @@ TIPOS_OBJETO = {
 
 TIPOS_PRIMITIVOS = {"inteiro", "decimal", "texto", "booleano"}
 
+# Eventos sem argumento ('ao botao(N)' é tratado à parte).
+EVENTOS_SEM_ARGUMENTO = ("iniciar", "obstaculo", "cartao")
+
 
 class AnalisadorSemantico:
     def __init__(self, placa=None):
@@ -79,7 +82,34 @@ class AnalisadorSemantico:
             self._comando(no)
 
     def _evento(self, no: A.Evento):
-        rotulo = f"ao botao({no.numero})"
+        nome = no.tipo_evento
+        if nome == "botao":
+            rotulo = f"ao botao({no.numero})"
+            self._valida_botao(no, rotulo)
+            self._registra_evento(no, f"botao({no.numero})", rotulo)
+        elif nome in EVENTOS_SEM_ARGUMENTO:
+            rotulo = f"ao {nome}"
+            self._registra_evento(no, nome, rotulo)
+            if nome == "obstaculo" and "ir" not in self.placa.pinos:
+                raise ErroSemantico(
+                    f"a placa '{self.placa.nome}' não tem sensor IR configurado",
+                    no.linha, no.coluna, rotulo,
+                )
+        else:
+            raise ErroSemantico(
+                f"evento desconhecido: 'ao {nome}'\n"
+                f"    eventos disponiveis: ao iniciar, ao botao(N), ao obstaculo, ao cartao",
+                no.linha, no.coluna, f"ao {nome}",
+            )
+        self._push()
+        if nome == "cartao":
+            # dentro de 'ao cartao' existe a variável 'cartao', já lida pelo leitor
+            self._declarar("cartao", "cartao", no)
+        for c in no.corpo:
+            self._comando(c)
+        self._pop()
+
+    def _valida_botao(self, no, rotulo):
         if no.numero < 1:
             raise ErroSemantico(
                 f"número de botão inválido: {no.numero}", no.linha, no.coluna, rotulo
@@ -93,11 +123,6 @@ class AnalisadorSemantico:
                 f'"pinos.botoes" de compilador/placas/{self.placa.nome}.json',
                 no.linha, no.coluna, rotulo,
             )
-        self._registra_evento(no, f"botao({no.numero})", rotulo)
-        self._push()
-        for c in no.corpo:
-            self._comando(c)
-        self._pop()
 
     def _registra_evento(self, no, chave, rotulo):
         if chave in self.eventos_vistos:
@@ -121,6 +146,8 @@ class AnalisadorSemantico:
         elif isinstance(no, A.Esperar):
             t = self._expr(no.tempo)
             self._exige_numerico(t, "esperar", no)
+        elif isinstance(no, A.Escrever):
+            self._escrever(no)
         elif isinstance(no, A.Retornar):
             if no.valor is not None:
                 self._expr(no.valor)
@@ -129,6 +156,21 @@ class AnalisadorSemantico:
         else:
             raise ErroSemantico(f"comando desconhecido: {type(no).__name__}",
                                 getattr(no, "linha", None), getattr(no, "coluna", None))
+
+    def _escrever(self, no: A.Escrever):
+        t = self._expr(no.valor)
+        if t in ("vazio", "metodo"):
+            raise ErroSemantico(
+                "'escrever' precisa de um valor para imprimir, mas esta chamada não devolve nada",
+                no.linha, no.coluna, "escrever(...)",
+            )
+        if t in TIPOS_OBJETO:
+            props = ", ".join(f"{t}.{p}" for p in sorted(TIPOS_OBJETO[t]))
+            raise ErroSemantico(
+                f"'escrever' não imprime um '{t}' inteiro, escolha uma propriedade\n"
+                f"    por exemplo: escrever({t}.uid);  propriedades: {props}",
+                no.linha, no.coluna, "escrever(...)",
+            )
 
     def _decl(self, no: A.DeclVar):
         if no.nome in self.escopos[-1]:

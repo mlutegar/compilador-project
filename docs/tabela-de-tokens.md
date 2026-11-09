@@ -34,6 +34,11 @@ Tokens que dão identidade à linguagem, representando hardware e comandos espec
 | `TK_LED` | `led` | `led` | Acesso ao LED do dispositivo |
 | `TK_BOTAO` | `botao` | `botao` | Representa um botão físico |
 | `TK_ESPERAR` | `esperar` | `esperar` | Interrompe a execução por determinado tempo |
+| `TK_ESCREVER` | `escrever` | `escrever` | Envia um valor para o Serial (`escrever("texto");`) |
+
+> **Contagem:** 43 tipos enviados ao parser (18 palavras reservadas + `TK_ID` + 3 literais + 14 operadores + 7 delimitadores) + `TK_EOF` = **44**. `TK_ESPACO` e `TK_COMENTARIO` são reconhecidos e descartados. O `TK_ESCREVER` é o único token novo (antes eram 43 com o `EOF`).
+>
+> **Nomes de evento não são tokens:** em `ao iniciar`, `ao obstaculo` e `ao cartao`, a palavra depois de `ao` chega como `TK_ID` e é conferida pelo parser/semântica. Assim `cartao` continua livre como nome de variável.
 
 > **Nota:** Métodos como `ler`, `verde`, `vermelho` e propriedades como `valido` **não** são palavras reservadas. Eles são tratados como identificadores (`TK_ID`), o que torna a linguagem mais flexível. Expressões como `nfc.ler()` são decompostas em `TK_NFC TK_PONTO TK_ID TK_ABRE_PAR TK_FECHA_PAR`, e a validação de nomes de métodos fica a cargo da **análise semântica**.
 
@@ -184,6 +189,7 @@ Versão compacta para referência rápida:
 | `TK_LED` | Hardware | `led` | `led` |
 | `TK_BOTAO` | Hardware | `botao` | `botao` |
 | `TK_ESPERAR` | Comando | `esperar` | `esperar` |
+| `TK_ESCREVER` | Comando | `escrever` | `escrever` |
 | `TK_ID` | Identificador | `cartao1` | `[a-zA-Z][a-zA-Z0-9_]*` |
 | `TK_INT` | Literal | `1500` | `[0-9]+` |
 | `TK_FLOAT` | Literal | `1.5` | `[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?` |

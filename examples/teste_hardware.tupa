@@ -1,0 +1,33 @@
+# Teste de hardware do prototipo Tupa, escrito em Tupa.
+# Reproduz firmware/teste_hardware.ino (placa ESP32-WROVER-DEV).
+dispositivo teste_hardware {
+
+    ao iniciar {
+        escrever("== Teste de hardware Tupa ==");
+        escrever("LED verde...");
+        led.verde();
+        esperar(700);
+        escrever("LED vermelho...");
+        led.vermelho();
+        esperar(700);
+        escrever("Aperte o botao, passe a mao no IR e aproxime um cartao.");
+    }
+
+    # o log "Botao: PRESSIONADO / solto" sai sozinho
+    # (o .ino manual acende o vermelho enquanto o botao esta apertado;
+    #  aqui ele acende por 300 ms a cada aperto, porque o LED apaga ao fim do evento)
+    ao botao(1) {
+        led.vermelho();
+        esperar(300);
+    }
+
+    # o log "IR: obstaculo detectado / livre" sai sozinho
+    ao obstaculo {
+    }
+
+    ao cartao {
+        escrever("Cartao UID: " + cartao.uid);
+        led.verde();
+        esperar(800);
+    }
+}

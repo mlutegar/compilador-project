@@ -55,6 +55,30 @@ def test_erro_lexico_sem_cpp():
     assert d["erros"][0]["fase"] == "erro lexico" and d["tokens"] == []
 
 
+def test_playground_compila_teste_hardware_com_eventos_novos():
+    exemplos = {e["nome"]: e["codigo"] for e in client.get("/api/exemplos").json()["exemplos"]}
+    assert "teste_hardware.tupa" in exemplos
+    d = client.post("/api/compilar", json={"codigo": exemplos["teste_hardware.tupa"]}).json()
+    assert d["erros"] == []
+    tipos = {t["tipo"] for t in d["tokens"]}
+    assert "TK_ESCREVER" in tipos
+    rotulos = [f["rotulo"] for f in d["ast"]["filhos"]]
+    assert "Evento(iniciar)" in rotulos and "Evento(obstaculo)" in rotulos and "Evento(cartao)" in rotulos
+    assert "IR: obstaculo detectado" in d["cpp"] and "nfcTentar(cartao)" in d["cpp"]
+    assert d["metricas"]["cpp_total"] > d["metricas"]["tupa_total"]
+
+
+def test_playground_erro_didatico_de_botao_sem_pino():
+    d = client.post("/api/compilar", json={"codigo": "dispositivo t {\n ao botao(2) { }\n}"}).json()
+    e = d["erros"][0]
+    assert e["fase"] == "erro semantico" and e["linha"] == 2 and "botao 2" in e["mensagem"]
+
+
+def test_linguagem_expoe_escrever_para_o_realce():
+    palavras = client.get("/api/linguagem").json()["palavras"]
+    assert palavras["escrever"] == "TK_ESCREVER" and palavras["botao"] == "TK_BOTAO"
+
+
 def test_limite_de_tamanho():
     r = client.post("/api/compilar", json={"codigo": "a" * (LIMITE_BYTES + 1)})
     assert r.status_code == 413

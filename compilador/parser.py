@@ -67,15 +67,26 @@ class Parser:
             return self._evento()
         return self._comando()
 
-    # ao botao(N) { ... }
+    # ao botao(N) { ... }  |  ao iniciar { ... }  |  ao obstaculo { ... }  |  ao cartao { ... }
+    # Só 'botao' é palavra reservada. Os demais nomes de evento são TK_ID (palavras
+    # contextuais) porque 'cartao' já é nome de variável em programas existentes;
+    # a análise semântica confere se o nome é um evento conhecido.
     def _evento(self):
         tok = self._espera("TK_AO", "'ao'")
-        self._espera("TK_BOTAO", "'botao'")
-        self._espera("TK_ABRE_PAR", "'('")
-        num = self._espera("TK_INT", "número do botão")
-        self._espera("TK_FECHA_PAR", "')'")
+        if self._aceita("TK_BOTAO"):
+            self._espera("TK_ABRE_PAR", "'('")
+            num = self._espera("TK_INT", "número do botão")
+            self._espera("TK_FECHA_PAR", "')'")
+            corpo = self._bloco()
+            return A.Evento("botao", num.valor, corpo, tok.linha, tok.coluna)
+        if self.atual.tipo != "TK_ID":
+            raise ErroSintatico(
+                f"esperado nome do evento (botao, iniciar, obstaculo, cartao), "
+                f"encontrado {self.atual.lexema!r}", self.atual.linha, self.atual.coluna,
+            )
+        nome = self._avanca().lexema
         corpo = self._bloco()
-        return A.Evento("botao", num.valor, corpo, tok.linha, tok.coluna)
+        return A.Evento(nome, None, corpo, tok.linha, tok.coluna)
 
     def _bloco(self):
         self._espera("TK_ABRE_CHAVE", "'{'")
@@ -96,6 +107,8 @@ class Parser:
             return self._repetir()
         if t == "TK_ESPERAR":
             return self._esperar()
+        if t == "TK_ESCREVER":
+            return self._escrever()
         if t == "TK_RETORNAR":
             return self._retornar()
         # senão: atribuição ou chamada (expressão-comando)
@@ -135,6 +148,14 @@ class Parser:
         self._espera("TK_FECHA_PAR", "')'")
         self._espera("TK_PONTO_VIRGULA", "';'")
         return A.Esperar(tempo, tok.linha, tok.coluna)
+
+    def _escrever(self):
+        tok = self._espera("TK_ESCREVER", "'escrever'")
+        self._espera("TK_ABRE_PAR", "'('")
+        valor = self._expr()
+        self._espera("TK_FECHA_PAR", "')'")
+        self._espera("TK_PONTO_VIRGULA", "';'")
+        return A.Escrever(valor, tok.linha, tok.coluna)
 
     def _retornar(self):
         tok = self._espera("TK_RETORNAR", "'retornar'")

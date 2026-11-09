@@ -41,8 +41,8 @@ class DeclVar(No):
 
 @dataclass
 class Evento(No):
-    tipo_evento: str          # 'botao'
-    numero: int
+    tipo_evento: str          # 'botao' | 'iniciar' | 'obstaculo' | 'cartao' (ou nome desconhecido)
+    numero: Optional[int]     # só para 'botao'
     corpo: List[No] = field(default_factory=list)
     linha: int = 0
     coluna: int = 0
@@ -77,6 +77,14 @@ class Repetir(No):
 @dataclass
 class Esperar(No):
     tempo: No
+    linha: int = 0
+    coluna: int = 0
+
+
+@dataclass
+class Escrever(No):
+    """escrever(expr);  ->  Serial.println(expr)"""
+    valor: No
     linha: int = 0
     coluna: int = 0
 

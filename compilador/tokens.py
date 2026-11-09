@@ -22,6 +22,7 @@ PALAVRAS_RESERVADAS = {
     "led": "TK_LED",
     "botao": "TK_BOTAO",
     "esperar": "TK_ESPERAR",
+    "escrever": "TK_ESCREVER",
 }
 
 TIPOS = {"TK_INTEIRO", "TK_DECIMAL", "TK_TEXTO", "TK_BOOLEANO"}

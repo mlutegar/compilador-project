@@ -25,7 +25,9 @@ def _rotulo(no):
     if isinstance(no, A.DeclVar):
         return f"DeclVar({no.tipo} {no.nome})"
     if isinstance(no, A.Evento):
-        return f"Evento(botao {no.numero})"
+        if no.numero is None:
+            return f"Evento({no.tipo_evento})"
+        return f"Evento({no.tipo_evento} {no.numero})"
     if isinstance(no, A.Atribuicao):
         return "Atribuicao(=)"
     if isinstance(no, A.Se):
@@ -34,6 +36,8 @@ def _rotulo(no):
         return "Repetir"
     if isinstance(no, A.Esperar):
         return "Esperar"
+    if isinstance(no, A.Escrever):
+        return "Escrever"
     if isinstance(no, A.Retornar):
         return "Retornar"
     if isinstance(no, A.ExprComando):
@@ -75,6 +79,8 @@ def _filhos(no):
         f = [("vezes", no.vezes)] + [("corpo", c) for c in no.corpo]
     elif isinstance(no, A.Esperar):
         f = [("tempo", no.tempo)]
+    elif isinstance(no, A.Escrever):
+        f = [("valor", no.valor)]
     elif isinstance(no, A.Retornar):
         if no.valor is not None:
             f = [("valor", no.valor)]

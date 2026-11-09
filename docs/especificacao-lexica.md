@@ -75,7 +75,10 @@ ir          → TK_IR
 led         → TK_LED
 botao       → TK_BOTAO
 esperar     → TK_ESPERAR
+escrever    → TK_ESCREVER
 ```
+
+Nomes de evento (`iniciar`, `obstaculo`, `cartao`) **não** estão na tabela: continuam `TK_ID`.
 
 ---
 

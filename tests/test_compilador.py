@@ -2,7 +2,7 @@
 
 Rodar:
     python -m pytest tests/ -q      (se tiver pytest)
-    python tests/test_compilador.py (execução direta, sem dependências)
+    python tests/test_compilador.py (execução direta; os 3 testes que usam tmp_path precisam do pytest)
 """
 
 import os
@@ -266,6 +266,128 @@ def test_ir_so_tem_deteccao_de_obstaculo():
         assert False
     except ErroSemantico as e:
         assert "nao existe IR TX" in str(e)
+
+
+# ---------- Parte C: eventos novos e escrever ----------
+RAIZ = os.path.join(os.path.dirname(__file__), "..")
+
+
+def _le(*partes):
+    with open(os.path.join(RAIZ, *partes), encoding="utf-8", newline="") as f:
+        return f.read().replace("\r\n", "\n")
+
+
+def test_lexer_escrever_e_palavra_reservada():
+    toks = tokenizar('escrever("oi");')
+    assert [t.tipo for t in toks][:5] == ["TK_ESCREVER", "TK_ABRE_PAR", "TK_STRING",
+                                           "TK_FECHA_PAR", "TK_PONTO_VIRGULA"]
+    assert toks[2].valor == "oi"
+
+
+def test_contagem_de_tokens_44():
+    from compilador.tokens import PALAVRAS_RESERVADAS
+    from compilador.lexer import _ESPECIFICACAO
+    emitidos = [n for n, _ in _ESPECIFICACAO if n not in ("TK_ESPACO", "TK_COMENTARIO", "TK_ID")]
+    # 27 especificações - 2 ignorados = 25 (inclui ID); + 18 palavras reservadas = 43; + EOF = 44
+    assert len(emitidos) + 1 + len(PALAVRAS_RESERVADAS) + 1 == 44
+
+
+def test_parser_eventos_novos():
+    ast = parsear(tokenizar(
+        "dispositivo t { ao iniciar { escrever(\"a\"); } ao obstaculo { } ao cartao { } ao botao(1) { } }"))
+    eventos = [(n.tipo_evento, n.numero) for n in ast.corpo]
+    assert eventos == [("iniciar", None), ("obstaculo", None), ("cartao", None), ("botao", 1)]
+    assert type(ast.corpo[0].corpo[0]).__name__ == "Escrever"
+
+
+def test_parser_evento_sem_nome():
+    try:
+        parsear(tokenizar("dispositivo t { ao { } }"))
+        assert False
+    except ErroSintatico as e:
+        assert "nome do evento" in str(e)
+
+
+def test_semantica_evento_desconhecido_didatico():
+    try:
+        compilar("dispositivo t {\n ao tocar { }\n}")
+        assert False
+    except ErroSemantico as e:
+        msg = str(e)
+        assert e.linha == 2 and "ao tocar" in msg
+        assert "ao iniciar" in msg and "ao obstaculo" in msg and "ao cartao" in msg
+
+
+def test_semantica_cartao_so_existe_em_ao_cartao():
+    analisar(parsear(tokenizar("dispositivo t { ao cartao { escrever(cartao.uid); se cartao.valido { } } }")))
+    try:
+        analisar(parsear(tokenizar("dispositivo t { ao obstaculo { escrever(cartao.uid); } }")))
+        assert False
+    except ErroSemantico as e:
+        assert "cartao" in str(e)
+
+
+def test_semantica_escrever_nao_imprime_objeto_nem_vazio():
+    for codigo, trecho in (
+        ("dispositivo t { ao cartao { escrever(cartao); } }", "escrever(cartao.uid)"),
+        ("dispositivo t { ao botao(1) { escrever(led.verde()); } }", "não devolve nada"),
+    ):
+        try:
+            compilar(codigo)
+            assert False
+        except ErroSemantico as e:
+            assert trecho in str(e)
+
+
+def test_codegen_escrever_vira_serial_println():
+    ino = compilar('dispositivo t { ao iniciar { escrever("oi \\\\ tchau"); inteiro x = 2; escrever(x); } }')
+    assert 'Serial.println("oi \\\\\\\\ tchau");' in ino    # barra invertida escapada
+    assert "Serial.println(x);" in ino
+
+
+def test_codegen_ao_iniciar_vira_setup():
+    ino = compilar('dispositivo t { ao iniciar { escrever("a"); } ao botao(1) { } }')
+    setup = ino[ino.index("void setup()"):ino.index("void loop()")]
+    loop = ino[ino.index("void loop()"):]
+    assert 'Serial.println("a");' in setup and 'Serial.println("a");' not in loop
+
+
+def test_codegen_obstaculo_detecta_borda():
+    ino = compilar("dispositivo t { ao obstaculo { led.verde(); } }")
+    assert "pinMode(IR_PIN, INPUT);" in ino and "INPUT_PULLUP" not in ino   # GPIO 34 sem pull-up
+    assert "if (leitura != ir_anterior)" in ino and "ir_anterior = leitura;" in ino
+    assert "IR: obstaculo detectado" in ino and "IR: livre" in ino
+    assert "MFRC522" not in ino
+
+
+def test_codegen_ao_cartao_usa_nfc_sem_nfc_ler():
+    ino = compilar('dispositivo t { ao cartao { escrever("UID: " + cartao.uid); } }')
+    assert "#include <MFRC522.h>" in ino and "nfcTentar(cartao)" in ino
+    assert "Cartao nfcLer()" not in ino and "NFC_TIMEOUT_MS" not in ino   # só se usar nfc.ler()
+    assert 'String("UID: ") + cartao.uid' in ino
+
+
+def test_cartao_em_dois_eventos_declara_nos_dois():
+    ino = compilar("dispositivo t { ao botao(1) { cartao = nfc.ler(); } ao cartao { escrever(cartao.uid); } }")
+    assert ino.count("Cartao cartao") == 2
+
+
+def test_compatibilidade_controle_nfc_tupa():
+    ino = compilar(_le("examples", "controle_nfc.tupa"), fonte="controle_nfc.tupa")
+    assert "nfcLer()" in ino and "ledVerde()" in ino and "ledVermelho()" in ino
+
+
+def test_snapshot_controle_nfc_gerado():
+    ino = compilar(_le("examples", "controle_nfc.tupa"), fonte="controle_nfc.tupa")
+    assert ino == _le("firmware", "controle_nfc_gerado", "controle_nfc_gerado.ino")
+
+
+def test_snapshot_teste_hardware_gerado():
+    ino = compilar(_le("examples", "teste_hardware.tupa"), fonte="teste_hardware.tupa")
+    assert ino == _le("firmware", "teste_hardware_gerado", "teste_hardware_gerado.ino")
+    for trecho in ("== Teste de hardware Tupa ==", "ledVerde();", "Botao: PRESSIONADO",
+                   "IR: obstaculo detectado", 'Serial.println((String("Cartao UID: ") + cartao.uid));'):
+        assert trecho in ino
 
 
 # ---------- runner sem pytest ----------
