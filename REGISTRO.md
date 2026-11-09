@@ -66,7 +66,7 @@ Diário de decisões e mudanças.
 
 ## P06 · Deploy no VPS · pendente
 
-Bloqueado em 08/11/2026 porque o push não tinha sido feito e faltava `docs/deploy-kvm8.md`. Destravado pelo P09 e P10.
+Bloqueado em 08/11/2026 porque o push não tinha sido feito e faltava o guia de deploy do VPS (mantido fora do repo). Destravado pelo P09 e P10.
 
 ---
 

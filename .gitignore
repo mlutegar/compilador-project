@@ -47,3 +47,6 @@ Thumbs.db
 # Fora do repo (Obsidian e pacote de entrega)
 obsidian-compilador-esp32/
 tupa_pacote_08-11.zip
+
+# Dados de infraestrutura (nunca versionar)
+docs/deploy-kvm8.md
