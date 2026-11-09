@@ -110,3 +110,19 @@ Diário de decisões e mudanças.
 - Site: rodapé com licença, disciplina, autores e link do GitHub (repositório público); nova aba "Como gravar" (5 passos + tabela de pinagem do ESP32-WROVER).
 - Download conferido: sai como `<programa>.ino` (ex.: `controle_nfc.ino`).
 - Testes: 50 passed; build do front sem erro. Screenshot: `docs/img/site-como-gravar.png`.
+
+---
+
+## P13 · Apresentação final (08/11/2026) · concluído
+
+**Resultado**
+- `apresentacao/index.html`: deck autocontido de 12 slides, 16:9, setas navegam, tecla N mostra as notas, identidade do pitch (fundo #0E1116, laranja #FF7A1A, verde #2EE6A6, logo), código com realce das palavras reservadas reais. Fontes só do Google Fonts.
+- `apresentacao/apresentacao.pdf`: 12 páginas, exportado do HTML com chromium headless (playwright). Conferido por screenshot de cada slide, sem sobreposição nem estouro.
+- `apresentacao/roteiro.md`: fala por slide, tempo (9:55 + demo de 3 a 4 min), divisão entre os quatro autores e plano B da demo.
+- Erros do slide 7 e métricas do slide 9 vieram de execução real (50 testes passando; controle_nfc 12 para 100, 8,3x; teste_hardware 23 para 112, 4,9x; manual com 51). Screenshot do playground tirado de https://tupa.mlutegar.com.
+- `artigo/` não foi alterado. Fonte do deck: `fonte.html` + `build.py` (gera o `index.html`) e `pdf.py`.
+
+**Avisos**
+- Os números oficiais batem com o repositório. As cores do prompt (#FF7A1A, #2EE6A6) diferem em 2 unidades das do pitch (#FF7A18, #2EE6A8); usei as do prompt.
+- `docs/Tupa-Pitch.pdf` está protegido por senha e não abriu; a identidade visual veio de `gerar-pitch.js` e da marca no Obsidian.
+- % TODO (placa): o `.ino` gerado ainda pode não ter sido gravado na placa; o aviso está só nas notas dos slides 8 e 11 e no `roteiro.md`.
