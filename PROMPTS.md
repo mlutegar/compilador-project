@@ -7,6 +7,8 @@ Registro dos prompts executados no projeto (um por etapa).
 - **P03**: compilador ajustado ao hardware real (ESP32-WROVER, RC522, IR de obstáculo), `escrever` e eventos novos, teste de hardware em Tupã, validação com `arduino-cli`.
 - **P11**: novo README, registro do deploy (P06, P10, P11) e limpeza de dados de infraestrutura.
 - **P14**: análise semântica, tabela de erros com códigos estáveis e evidência de compilação.
+- **P15**: artigo IEEE expandido de 5 para 9 páginas (`artigo/main.tex`).
+- **P16**: apresentação final refeita do zero (14 slides, PDF e roteiro com perguntas da banca).
 
 ## Status
 
@@ -26,4 +28,5 @@ Registro dos prompts executados no projeto (um por etapa).
 | P12 | URL oficial, licença MIT e site | concluído |
 | P13 | Apresentação final | concluído |
 | P14 | Análise semântica, tabela de erros, evidência de compilação | concluído |
-| P15 | sem registro no repositório | pendente |
+| P15 | Artigo expandido para 9 páginas | concluído |
+| P16 | Apresentação final refeita (14 slides, PDF, roteiro) | concluído (falta gravar o .ino gerado na placa) |

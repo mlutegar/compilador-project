@@ -162,3 +162,23 @@ Diário de decisões e mudanças.
 - A figura de erro agora mostra o formato real com código, `[E19]`, linha 3 coluna 12 (antes era um exemplo antigo, linha 11).
 - O cronograma usa só os meses do `Cronograma.md` (placeholder do Obsidian), sem datas exatas. O custo de R$ 120 é estimativa de varejo, não nota fiscal.
 - Mantidos os `% TODO`: e-mails de Michel e André, domínio do e-mail do Guilherme, nome do professor, datasheet MFRC522, tempo de compilação/gravação, testes com usuários e `% TODO (placa)` (gravação do `.ino` gerado).
+
+---
+
+## P16 · Apresentação final refeita do zero (09/11/2026) · concluído
+
+**Resultado**
+- `apresentacao/` substituída: 14 slides em `index.html` autocontido (16:9, setas navegam, N mostra as notas, F tela cheia; só Google Fonts como recurso externo), `apresentacao.pdf` (14 páginas, 1 slide por página, playwright headless) e `roteiro.md` (fala por slide, 10:00 de fala mais 3:00 de demo, divisão entre os quatro, plano B da demo e 8 perguntas prováveis).
+- Identidade do pitch: fundo #0E1116, laranja #FF7A1A, verde #2EE6A6 e logo. Código em mono com realce das 18 palavras reservadas reais do lexer.
+- Fonte única do conteúdo: `slides.py` (HTML, quem fala, tempo e fala). `build.py` gera `index.html` e `roteiro.md` e **falha se algum número divergir do repositório**: 44 tokens (contados em `lexer.py`/`tokens.py`), 17 nós de AST, 40 códigos (1 L, 13 S, 21 E, 5 G, do catálogo), linhas de código dos `.tupa`, `.ino` gerados e manual (12, 100, 23, 112, 51), razões 8,3 e 4,9, flash e RAM de `docs/compilacao.md`. Diagramas (pipeline e AST), tokenização e trechos de código saem dos arquivos reais; a saída do erro [E19] é a do compilador.
+- `shots.py` tira o screenshot de cada slide e checa estouro, sobreposição e palavras por slide; `pdf.py` gera o PDF. Todos os 14 slides sem estouro; textos entre 5 e 32 palavras fora de código, tabelas e diagramas (o resto está nas notas).
+- QR code refeito para https://tupa.mlutegar.com (biblioteca `qrcode`, só no build).
+
+**Avisos**
+- Todos os números do prompt bateram com o repositório; nenhuma divergência.
+- `docs/Tupa-Pitch.pdf` continua protegido por senha; a identidade visual veio das cores do prompt, do `gerar-pitch.js` e do logo em `web/app/public/tupa-icone.png`.
+- A foto do slide 13 usa duas vistas de `artigo/figuras/` (vista superior e visão geral), e o screenshot do slide 12 é `docs/img/playground.png`; o thumbnail da aba Como gravar é `docs/img/site-como-gravar.png`.
+- O arquivo do vídeo tutorial não está no repositório (só o roteiro `roteiro-video-tutorial.md.pdf`, não versionado): o plano B do `roteiro.md` pede que o vídeo esteja baixado na máquina da banca.
+- % TODO (placa): o `.ino` gerado de `controle_nfc.tupa` ainda não foi gravado e testado nos três casos (liberado, negado, sem cartão). O aviso está só nas notas do slide 13 e no `roteiro.md`; a pergunta 8 da banca depende dele.
+- Cada slide fala em média 2:30 por pessoa (Michel 2:30, André 2:25, Felipe 2:25, Guilherme 2:40).
+

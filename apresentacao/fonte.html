@@ -9,59 +9,63 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0E1116; --bg2:#1A1F26; --laranja:#FF7A1A; --verde:#2EE6A6; --verm:#FF5A6A;
-  --cinza:#98A2B3; --corpo:#C7CFDA; --branco:#F5F7FA; --roxo:#C792FF; --amarelo:#FFD166;
+  --bg:#0E1116; --bg2:#161B22; --bg3:#0A0D12; --linha:#2A313B;
+  --laranja:#FF7A1A; --verde:#2EE6A6; --verm:#FF5A6A; --amarelo:#FFD166; --roxo:#C792FF;
+  --cinza:#98A2B3; --corpo:#C7CFDA; --branco:#F5F7FA;
   --mono:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
   --sans:"Inter","Segoe UI",system-ui,sans-serif;
+  --logo:url({{LOGO}});
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:var(--sans);color:var(--corpo)}
-#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:0 0;background:var(--bg);overflow:hidden}
-.slide{position:absolute;inset:0;padding:56px 72px 60px;display:none;background:var(--bg)}
-.slide.on{display:block}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:var(--sans);color:var(--corpo);font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;background:var(--bg);overflow:hidden}
+.slide{position:absolute;inset:0;padding:48px 72px 0;display:none;flex-direction:column;background:var(--bg)}
+.slide.on{display:flex}
+.cx{flex:1;display:flex;flex-direction:column;justify-content:center;padding-bottom:64px}
 .slide::before{content:"";position:absolute;left:0;top:0;width:8px;height:100%;background:var(--laranja)}
+.mini{position:absolute;right:56px;top:34px;width:46px;height:46px;background:var(--logo) center/contain no-repeat;opacity:.9}
 .kicker{font-size:15px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--laranja)}
-h2{font-size:40px;font-weight:800;color:var(--branco);line-height:1.15;margin-top:8px;letter-spacing:-.01em}
+h2{font-size:38px;font-weight:800;color:var(--branco);line-height:1.15;margin-top:6px;letter-spacing:-.01em;max-width:1050px}
 h2 em{font-style:normal;color:var(--verde)}
-.rodape{position:absolute;left:72px;right:72px;bottom:22px;display:flex;justify-content:space-between;font-size:13px;letter-spacing:.14em;color:var(--cinza);text-transform:uppercase}
-.corpo{font-size:22px;line-height:1.4;color:var(--corpo)}
-.cinza{color:var(--cinza)}
-.verde{color:var(--verde)} .laranja{color:var(--laranja)} .verm{color:var(--verm)}
-.painel{background:var(--bg2);border:1px solid #2A313B;border-radius:12px;overflow:hidden}
-.painel .tit{font-family:var(--mono);font-size:13px;color:var(--cinza);padding:9px 16px;border-bottom:1px solid #2A313B;background:#151A21;display:flex;justify-content:space-between}
+.rodape{position:absolute;left:72px;right:72px;bottom:20px;display:flex;justify-content:space-between;font-size:12px;letter-spacing:.14em;color:#6B7686;text-transform:uppercase}
+.cinza{color:var(--cinza)} .verde{color:var(--verde)} .laranja{color:var(--laranja)} .verm{color:var(--verm)} .branco{color:var(--branco)}
+.grid{display:grid;gap:20px}
+.painel{background:var(--bg2);border:1px solid var(--linha);border-radius:12px;overflow:hidden}
+.painel .tit{font-family:var(--mono);font-size:13px;color:var(--cinza);padding:8px 16px;border-bottom:1px solid var(--linha);background:#12171D;display:flex;justify-content:space-between}
 .painel .tit b{color:var(--laranja);font-weight:700}
-pre{font-family:var(--mono);font-size:18px;line-height:1.6;color:#E6EAF0;padding:14px 18px;white-space:pre;tab-size:2}
-pre.peq{font-size:15.5px;line-height:1.6}
-pre.med{font-size:21px}
+pre{font-family:var(--mono);font-size:16px;line-height:1.5;color:#E6EAF0;padding:12px 16px;white-space:pre;tab-size:2}
 .k{color:var(--laranja);font-weight:700}.t{color:var(--verde)}.h{color:var(--roxo)}
 .n{color:var(--amarelo)}.c{color:#6B7686;font-style:italic}.s{color:#9BE7C4}.e{color:var(--verm)}
-.chip{display:inline-block;font-family:var(--mono);font-size:17px;padding:7px 14px;border-radius:999px;background:var(--bg2);border:1px solid #2A313B;color:var(--branco);margin:0 6px 8px 0}
-.chip.o{border-color:var(--laranja);color:var(--laranja)} .chip.v{border-color:var(--verde);color:var(--verde)}
-.grid{display:grid;gap:20px}
-.card{background:var(--bg2);border:1px solid #2A313B;border-radius:12px;padding:26px 22px;min-height:250px}
-.card h3{font-size:27px;color:var(--branco);margin-bottom:8px}
-.card p{font-size:22px;line-height:1.35}
+.chip{display:inline-block;font-family:var(--mono);font-size:16px;padding:6px 14px;border-radius:999px;background:var(--bg2);border:1px solid var(--linha);color:var(--branco);margin:0 6px 8px 0}
+.chip.o{border-color:var(--laranja);color:var(--laranja)} .chip.v{border-color:var(--verde);color:var(--verde)} .chip.r{border-color:var(--verm);color:var(--verm)}
+.card{background:var(--bg2);border:1px solid var(--linha);border-radius:12px;padding:22px 20px}
+.card h3{font-size:24px;color:var(--branco);margin-bottom:8px}
+.card p{font-size:19px;line-height:1.35}
 .card.t{border-color:var(--laranja);box-shadow:0 0 0 1px var(--laranja) inset}
 .card.t h3{color:var(--laranja)}
-table{border-collapse:collapse;width:100%;font-size:28px}
-th{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--cinza);text-align:left;padding:10px 18px;border-bottom:2px solid var(--laranja);font-weight:600}
-td{padding:26px 18px;border-bottom:1px solid #2A313B;color:var(--branco);font-family:var(--mono)}
+.card h3.verde{color:var(--verde)} .card h3.laranja{color:var(--laranja)} .card h3.roxo{color:var(--roxo)}
+table{border-collapse:collapse;width:100%}
+th{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--cinza);text-align:left;padding:8px 14px;border-bottom:2px solid var(--laranja);font-weight:600}
+td{padding:10px 14px;border-bottom:1px solid var(--linha);color:var(--branco);font-family:var(--mono);font-size:17px}
 td:first-child{font-family:var(--sans);font-weight:600}
-td.r{color:var(--verde);font-weight:700;font-size:30px}
-.term{background:#090B0F;border:1px solid #2A313B;border-radius:12px}
-.term pre{font-size:18px;color:#D8DEE8}
-.passo{display:flex;gap:14px;align-items:center;font-size:21px;color:var(--branco);margin-bottom:12px}
-.passo i{font-style:normal;font-family:var(--mono);font-weight:700;width:34px;height:34px;border-radius:50%;background:var(--laranja);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
-#notas{position:absolute;left:0;right:0;bottom:0;max-height:46%;overflow:auto;background:rgba(9,11,15,.97);border-top:2px solid var(--verde);padding:16px 72px 18px;font-size:17px;line-height:1.45;color:var(--branco);display:none;z-index:9;white-space:pre-wrap}
+.term{background:var(--bg3);border:1px solid var(--linha);border-radius:12px}
+.term pre{color:#D8DEE8}
+.num{font-size:76px;font-weight:800;line-height:1;color:var(--verde);letter-spacing:-.02em}
+.num small{font-size:22px;font-weight:600;color:var(--cinza);letter-spacing:0;margin-left:6px}
+.rot{font-size:15px;color:var(--cinza);margin-top:4px;letter-spacing:.04em}
+.passo{display:flex;gap:16px;align-items:center;font-size:27px;color:var(--branco);margin-bottom:20px}
+.gd td{font-size:20px;padding:16px 14px}.gd th{font-size:13px;white-space:nowrap}
+.passo i{font-style:normal;font-family:var(--mono);font-weight:700;width:42px;height:42px;flex:none;border-radius:50%;background:var(--laranja);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px}
+#notas{position:absolute;left:0;right:0;bottom:0;max-height:48%;overflow:auto;background:rgba(9,11,15,.97);border-top:2px solid var(--verde);padding:16px 72px 18px;font-size:17px;line-height:1.45;color:var(--branco);display:none;z-index:9}
 #notas.on{display:block}
 #notas b{color:var(--verde)}
-#dica{position:absolute;right:16px;top:12px;font-size:12px;color:#4B5563;font-family:var(--mono);z-index:5}
-.notas-src{display:none}
+#dica{position:absolute;right:16px;bottom:8px;font-size:11px;color:#3F4752;font-family:var(--mono);z-index:5}
+template{display:none}
 @media print{
   @page{size:1280px 720px;margin:0}
   html,body{overflow:visible;background:var(--bg);width:1280px;height:auto}
   #stage{position:static;transform:none!important;height:auto;overflow:visible}
-  .slide{display:block;position:relative;width:1280px;height:720px;page-break-after:always;break-after:page;overflow:hidden}
+  .slide{display:flex;position:relative;width:1280px;height:720px;page-break-after:always;break-after:page;overflow:hidden}
   #notas,#dica{display:none!important}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
@@ -69,342 +73,16 @@ td.r{color:var(--verde);font-weight:700;font-size:30px}
 </head>
 <body>
 <div id="stage">
-<div id="dica">← → navegar · N notas</div>
-
-<!-- 1 CAPA -->
-<section class="slide" data-n="1">
-  <div style="position:absolute;right:96px;top:90px;width:430px;height:430px;border-radius:50%;background:radial-gradient(circle,#2a1a0c 0%,var(--bg) 70%)"></div>
-  <img src="{{LOGO}}" alt="Logo do Tupã" style="position:absolute;right:96px;top:90px;width:430px;height:430px;object-fit:contain">
-  <div style="position:absolute;left:72px;top:170px">
-    <div class="kicker">Apresentação final · Entrega 2</div>
-    <div style="font-size:150px;font-weight:800;color:var(--branco);letter-spacing:.14em;line-height:1.05;margin-top:10px">TUPÃ</div>
-    <div style="font-size:44px;font-weight:600;color:var(--laranja);margin-top:6px">Da ideia ao hardware.</div>
-    <div style="font-size:21px;color:var(--corpo);margin-top:60px;line-height:1.6">Michel Lutegar · André Costa<br>Felipe Dutrain · Guilherme Lopes</div>
-    <div style="font-size:16px;color:var(--cinza);margin-top:18px;letter-spacing:.1em;text-transform:uppercase">Linguagens Formais e Compiladores · IBMEC</div>
-  </div>
-  <template class="notas"><b>Michel · 0:30.</b> Boa tarde, banca. Somos Michel, André, Felipe e Guilherme. Tupã é uma linguagem em português que vira firmware de ESP32. Na primeira entrega mostramos a ideia. Hoje mostramos o que foi entregue: compilador completo, site no ar e protótipo montado. Vamos percorrer as fases do compilador e terminar com a demonstração na placa.</template>
-</section>
-
-<!-- 2 PROBLEMA -->
-<section class="slide" data-n="2">
-  <div class="kicker">O problema</div>
-  <h2>O mesmo teste, em duas linguagens.</h2>
-  <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:32px">
-    <div class="painel"><div class="tit"><span>firmware/teste_hardware.ino</span><b>51 linhas</b></div>
-<pre class="cpp peq" style="font-size:15px;line-height:1.45">void loop() {
-  int b = digitalRead(BTN);
-  int ir = digitalRead(IR_PIN);
-  if (b != lastBtn) {
-    Serial.println(b == LOW ? "Botao: PRESSIONADO"
-                            : "Botao: solto");
-    lastBtn = b;
-  }
-  if (ir != lastIr) {
-    Serial.println(ir == LOW ? "IR: obstaculo detectado"
-                             : "IR: livre");
-    lastIr = ir;
-  }
-  digitalWrite(LED_R, b == LOW);
-  if (rfid.PICC_IsNewCardPresent() &amp;&amp;
-      rfid.PICC_ReadCardSerial()) {
-    // ... UID, LED, PICC_HaltA()
-  }
-}</pre></div>
-    <div class="painel"><div class="tit"><span>examples/teste_hardware.tupa</span><b>23 linhas</b></div>
-<pre class="tupa med" style="font-size:19px"># botão e IR já registram no Serial sozinhos
-ao botao(1) {
-    led.vermelho();
-    esperar(300);
-}
-
-ao obstaculo {
-}
-
-ao cartao {
-    escrever("Cartao UID: " + cartao.uid);
-    led.verde();
-    esperar(800);
-}</pre></div>
-  </div>
-  <div class="rodape"><span>Tupã · banca</span><span>02</span></div>
-  <template class="notas"><b>Michel · 1:00.</b> Esse é o teste de hardware que provou nossa bancada, escrito à mão em C++. Para aceitar um aperto de botão, um obstáculo e um cartão, o estudante precisa saber pinos, modos de entrada, SPI, leitura do RC522 e logs. À direita, o mesmo comportamento em Tupã. Os eventos são frases: ao botão, ao obstáculo, ao cartão. O log de botão e de IR sai sozinho. São 51 linhas de código contra 23. O ganho não é só tamanho, é que o hardware some da frente do iniciante. Um detalhe honesto: o manual acende o vermelho enquanto o botão está apertado; o Tupã acende por 300 ms a cada aperto.</template>
-</section>
-
-<!-- 3 LACUNA -->
-<section class="slide" data-n="3">
-  <div class="kicker">A lacuna</div>
-  <h2>Ninguém une <em>português</em>, <em>texto</em> e <em>hardware real</em>.</h2>
-  <div class="grid" style="grid-template-columns:repeat(5,1fr);gap:16px;margin-top:80px">
-    <div class="card"><h3>Arduino IDE</h3><p>C++ cru. O hardware aparece inteiro.</p></div>
-    <div class="card"><h3>MakeCode, Blockly</h3><p>Blocos. Não ensinam texto.</p></div>
-    <div class="card"><h3>Flipper Zero</h3><p>Ferramenta pronta. Não ensina a programar.</p></div>
-    <div class="card"><h3>Portugol Studio</h3><p>Português, mas sem placa.</p></div>
-    <div class="card t"><h3>Tupã</h3><p>Texto em português que grava na placa.</p></div>
-  </div>
-  <div class="rodape"><span>Tupã · banca</span><span>03</span></div>
-  <template class="notas"><b>Michel · 0:45.</b> Olhamos quatro referências. Arduino IDE é poderosa, mas exige C++ e conhecimento de pinos desde o primeiro dia. MakeCode e Blockly baixam a barreira com blocos, mas o estudante não pratica sintaxe de texto. Flipper Zero é um produto pronto para NFC e infravermelho, mas é uma ferramenta de uso, não de ensino de programação. Portugol Studio ensina lógica em português, mas não chega a uma placa. O espaço que sobra é texto em português gerando firmware para hardware real. É onde o Tupã se encaixa.</template>
-</section>
-
-<!-- 4 LINGUAGEM -->
-<section class="slide" data-n="4">
-  <div class="kicker">A linguagem</div>
-  <h2>Eventos em português.</h2>
-  <div class="grid" style="grid-template-columns:600px 1fr;gap:36px;margin-top:28px">
-    <div class="painel"><div class="tit"><span>examples/controle_nfc.tupa</span><b>12 linhas</b></div>
-<pre class="tupa med" style="font-size:19px;line-height:1.5">dispositivo controle {
-
-    inteiro tentativas = 3;
-
-    ao botao(1) {
-        # le um cartao NFC
-        cartao = nfc.ler();
-
-        se cartao.valido == verdadeiro {
-            led.verde();
-            esperar(1500);
-        } senao {
-            led.vermelho();
-        }
-    }
-}</pre></div>
-    <div style="padding-top:6px">
-      <div class="chip o">ao iniciar</div><div class="chip o">ao botao(1)</div><br>
-      <div class="chip o">ao obstaculo</div><div class="chip o">ao cartao</div>
-      <div style="margin-top:34px;font-size:26px;line-height:1.5;color:var(--branco)">
-        Legível.<br>Orientada a evento.<br>Sem pino à vista.
-      </div>
-    </div>
-  </div>
-  <div class="rodape"><span>Tupã · banca</span><span>04</span></div>
-  <template class="notas"><b>André · 1:00.</b> Três princípios: legível, orientada a evento e sem pino à vista. Quem define pino é o arquivo da placa, não o programa. Os eventos são quatro: ao iniciar roda uma vez no setup; ao botão dispara a cada aperto, já com debounce; ao obstáculo dispara quando o sensor IR passa de livre para bloqueado; ao cartão dispara quando um cartão novo é lido. Neste exemplo, controle_nfc: ao apertar o botão, lê o cartão, e se for válido acende o verde por 1,5 s, senão acende o vermelho. Observação para a banca: iniciar, obstaculo e cartao não são palavras reservadas. São identificadores que só têm sentido depois de "ao". Assim "cartao" continua livre como nome de variável.</template>
-</section>
-
-<!-- 5 LEXICO -->
-<section class="slide" data-n="5">
-  <div class="kicker">Análise léxica</div>
-  <h2>Uma regex mestre, <em>44</em> tokens.</h2>
-  <div class="painel" style="margin-top:36px"><div class="tit"><span>compilador/lexer.py</span><b>regex mestre</b></div>
-<pre class="py">_MESTRE = re.compile("|".join(
-    f"(?P&lt;{nome}&gt;{padrao})" for nome, padrao in _ESPECIFICACAO))</pre></div>
-  <div class="grid" style="grid-template-columns:1fr 1fr;gap:22px 40px;margin-top:40px;font-size:17px">
-    <div><div class="cinza" style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">18 palavras reservadas</div>
-      <span class="chip o">dispositivo</span><span class="chip o">ao</span><span class="chip o">se</span><span class="chip o">senao</span><span class="chip o">repetir</span><span class="chip o">esperar</span><span class="chip o">escrever</span><span class="chip o">nfc</span><span class="chip o">led</span><span class="chip o">...</span></div>
-    <div><div class="cinza" style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">14 operadores</div>
-      <span class="chip">+</span><span class="chip">-</span><span class="chip">*</span><span class="chip">/</span><span class="chip">=</span><span class="chip">==</span><span class="chip">!=</span><span class="chip">&gt;=</span><span class="chip">&amp;&amp;</span><span class="chip">||</span><span class="chip">...</span></div>
-    <div><div class="cinza" style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">1 identificador · 3 literais</div>
-      <span class="chip v">TK_ID</span><span class="chip v">TK_INT</span><span class="chip v">TK_FLOAT</span><span class="chip v">TK_STRING</span></div>
-    <div><div class="cinza" style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">7 delimitadores · fim de arquivo</div>
-      <span class="chip">( )</span><span class="chip">{ }</span><span class="chip">,</span><span class="chip">.</span><span class="chip">;</span><span class="chip">TK_EOF</span></div>
-  </div>
-  <div class="rodape"><span>Tupã · banca</span><span>05</span></div>
-  <template class="notas"><b>André · 0:50.</b> O lexer usa uma única expressão regular mestre, montada juntando um grupo nomeado por token, com ordem importando: operadores de dois caracteres antes dos de um. São 44 tipos: 18 palavras reservadas, 1 identificador, 3 literais, 14 operadores, 7 delimitadores, mais o fim de arquivo. Espaço e comentário são reconhecidos e descartados. Erros léxicos informam linha e coluna. Os nomes de métodos, como ler e verde, são identificadores comuns, e a validação deles fica para a fase semântica.</template>
-</section>
-
-<!-- 6 SINTATICO -->
-<section class="slide" data-n="6">
-  <div class="kicker">Análise sintática</div>
-  <h2>Descendente recursivo, <em>17</em> tipos de nó.</h2>
-  <div class="grid" style="grid-template-columns:440px 1fr;gap:20px;margin-top:40px">
-    <div class="painel"><div class="tit"><span>EBNF resumida</span></div>
-<pre class="peq ebnf" style="font-size:15px">programa ::= "dispositivo" ID
-             "{" item* "}"
-item     ::= evento | comando
-evento   ::= "ao" "botao" "(" INT ")" bloco
-           | "ao" ID bloco
-bloco    ::= "{" comando* "}"
-se       ::= "se" expr bloco
-             ( "senao" bloco )?
-expr     ::= ou
-ou       ::= e ( "||" e )*
-  ...  igualdade, termo, fator
-posfixo  ::= primario
-             ( "." ID | "(" args? ")" )*</pre></div>
-    <svg viewBox="0 0 830 350" width="640" height="270" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, Consolas, monospace" font-size="16" style="margin-top:30px">
-      <g stroke="#4B5563" stroke-width="2" fill="none">
-        <path d="M280 48 L100 95"/><path d="M280 48 L460 95"/>
-        <path d="M100 133 L100 180"/>
-        <path d="M460 133 L290 180"/><path d="M460 133 L640 180"/>
-        <path d="M290 218 L290 265"/>
-        <path d="M640 218 L510 265"/><path d="M640 218 L640 265"/><path d="M640 218 L770 265"/>
-      </g>
-      <g text-anchor="middle" fill="#F5F7FA">
-        <g><rect x="205" y="10" width="150" height="38" rx="8" fill="#FF7A1A"/><text x="280" y="35" fill="#0E1116" font-weight="700">Programa</text></g>
-        <g><rect x="35" y="95" width="130" height="38" rx="8" fill="#1A1F26" stroke="#2EE6A6"/><text x="100" y="120">DeclVar</text></g>
-        <g><rect x="395" y="95" width="130" height="38" rx="8" fill="#1A1F26" stroke="#FF7A1A"/><text x="460" y="120">Evento</text></g>
-        <g><rect x="45" y="180" width="110" height="38" rx="8" fill="#1A1F26" stroke="#4B5563"/><text x="100" y="205">Literal 3</text></g>
-        <g><rect x="225" y="180" width="130" height="38" rx="8" fill="#1A1F26" stroke="#2EE6A6"/><text x="290" y="205">Atribuicao</text></g>
-        <g><rect x="585" y="180" width="110" height="38" rx="8" fill="#1A1F26" stroke="#FF7A1A"/><text x="640" y="205">Se</text></g>
-        <g><rect x="215" y="265" width="150" height="38" rx="8" fill="#1A1F26" stroke="#4B5563"/><text x="290" y="290">nfc.ler()</text></g>
-        <g><rect x="455" y="265" width="110" height="38" rx="8" fill="#1A1F26" stroke="#4B5563"/><text x="510" y="290">Binaria ==</text></g>
-        <g><rect x="585" y="265" width="110" height="38" rx="8" fill="#1A1F26" stroke="#2EE6A6"/><text x="640" y="290">então</text></g>
-        <g><rect x="715" y="265" width="110" height="38" rx="8" fill="#1A1F26" stroke="#FF5A6A"/><text x="770" y="290">senão</text></g>
-      </g>
-      <g text-anchor="middle" fill="#98A2B3" font-size="13">
-        <text x="280" y="330" style="display:none"></text>
-        <text x="640" y="326">led.verde</text><text x="640" y="343">esperar(1500)</text><text x="770" y="326">led.vermelho</text><text x="510" y="326">cartao.valido</text>
-      </g>
-    </svg>
-  </div>
-  <div class="rodape"><span>Tupã · banca</span><span>06</span></div>
-  <template class="notas"><b>André · 1:10.</b> O parser é descendente recursivo com um token de lookahead: uma função por regra da gramática. A precedência dos operadores está codificada na cadeia de regras, de ou até posfixo, do menor para o maior. A AST tem 17 tipos de nó. À direita, a árvore de controle_nfc: um programa com uma declaração e um evento; o evento tem uma atribuição, nfc.ler(), e um se com condição, ramo então e ramo senão. A saída completa sai com o comando tupa ast. Erros sintáticos informam linha, coluna e o que era esperado.</template>
-</section>
-
-<!-- 7 SEMANTICO -->
-<section class="slide" data-n="7">
-  <div class="kicker">Análise semântica</div>
-  <h2>Erros que <em>ensinam</em>.</h2>
-  <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:30px">
-    <div>
-      <div class="cinza" style="font-family:var(--mono);font-size:15px;margin-bottom:8px">led.roxo();</div>
-      <div class="term"><pre class="peq" style="font-size:18px"><span class="e">erro semantico - linha 3, coluna 12</span>
-    metodo inexistente no modulo 'led'
-    disponiveis: verde(), vermelho(), apagar()
-    led.roxo()
-
-compilacao interrompida: 1 erro</pre></div>
-    </div>
-    <div>
-      <div class="cinza" style="font-family:var(--mono);font-size:15px;margin-bottom:8px">ir.enviar("x");</div>
-      <div class="term"><pre class="peq" style="font-size:18px"><span class="e">erro semantico - linha 3, coluna 11</span>
-    metodo inexistente no modulo 'ir'
-    disponiveis: detectado()
-    o 'ir' e um sensor de obstaculo (emissor e
-    receptor no mesmo modulo): nao existe IR TX
-    nem controle remoto
-    ir.enviar()
-
-compilacao interrompida: 1 erro</pre></div>
-    </div>
-  </div>
-  <div style="margin-top:26px;font-size:22px;color:var(--branco)">Saída real do compilador. <span class="cinza">Linha, coluna e o que existe de verdade.</span></div>
-  <div class="rodape"><span>Tupã · banca</span><span>07</span></div>
-  <template class="notas"><b>Felipe · 1:10.</b> Estas duas mensagens foram geradas rodando o compilador de verdade, não são maquete. A análise semântica checa módulos de hardware, métodos, tipos, eventos repetidos e se a placa tem pino para o botão pedido. No primeiro erro, led.roxo não existe, e o compilador lista o que existe. No segundo, ir.enviar: a mensagem explica que nosso IR é um sensor de obstáculo, sem transmissor. Isso foi uma decisão de projeto após conferir o hardware real: tiramos ir.enviar e ir.receber, e entrou ir.detectado. O compilador para no primeiro erro e não gera código.</template>
-</section>
-
-<!-- 8 GERACAO -->
-<section class="slide" data-n="8">
-  <div class="kicker">Geração de código</div>
-  <h2>Do arquivo da placa ao <em>.ino</em>.</h2>
-  <div class="grid" style="grid-template-columns:470px 1fr;gap:22px;margin-top:26px">
-    <div class="painel"><div class="tit"><span>placas/esp32_wrover.json</span><b>placa</b></div>
-<pre class="peq">"pinos": {
-  "nfc_ss": 5,    "nfc_rst": 22,
-  "led_verde": 25, "led_vermelho": 26,
-  "ir": 34,        "botoes": { "1": 4 }
-},
-"nfc": {
-  "timeout_ms": 3000,
-  "uids_autorizados": [
-    "33 7A 87 F7", "43 A3 6F F5"
-  ]
-}</pre></div>
-    <div class="painel"><div class="tit"><span>controle_nfc_gerado.ino</span><b>setup() e loop()</b></div>
-<pre class="cpp peq">#define DEBOUNCE_MS    50
-#define NFC_TIMEOUT_MS 3000
-
-// nfc.ler(): espera até 3 s pelo cartão
-while (!lido &amp;&amp; (millis() - inicio) &lt; NFC_TIMEOUT_MS) {
-  lido = nfcTentar(c);
-  if (!lido) delay(20);
-}
-
-void loop() {
-  if ((millis() - botao1_mudou) &gt; DEBOUNCE_MS
-      &amp;&amp; leitura != botao1_estavel) {
-    botao1_estavel = leitura;  // um disparo por aperto
-  }
-}</pre></div>
-  </div>
-  <div style="margin-top:16px">
-    <span class="chip o">pinagem</span><span class="chip o">setup() / loop()</span><span class="chip o">debounce 50 ms</span><span class="chip o">espera de 3 s no NFC</span><span class="chip o">lista de UIDs</span>
-  </div>
-  <div class="rodape"><span>Tupã · banca</span><span>08</span></div>
-  <template class="notas"><b>Felipe · 1:10.</b> O gerador percorre a AST e produz um .ino pronto para o arduino-cli. Os pinos, os pinos do SPI, o FQBN, a biblioteca e a lista de UIDs autorizados vêm de um arquivo da placa, esp32_wrover.json. Trocar de placa é trocar esse arquivo. O ao iniciar vira o corpo do setup; os outros eventos viram blocos no loop. O botão ganha debounce por millis, sem delay, e dispara uma vez por aperto. O nfc.ler espera até 3 segundos por um cartão; sem cartão, o resultado é inválido. A lista de UIDs fica na placa, não na linguagem: foi a opção que pedia menos mudança. O cabeçalho do arquivo gerado diz de qual .tupa ele veio. Os três sketches compilam com o arduino-cli.
-% TODO (placa): confirmar se o .ino gerado já foi gravado na placa antes da banca; hoje só o teste_hardware.ino manual foi validado em bancada (26/10/2026).</template>
-</section>
-
-<!-- 9 METRICAS -->
-<section class="slide" data-n="9">
-  <div class="kicker">Métricas</div>
-  <h2>Menos código para dizer a mesma coisa.</h2>
-  <table style="margin-top:50px">
-    <tr><th>Exemplo</th><th>Tupã</th><th>C++ gerado</th><th>Razão</th><th>Manual</th></tr>
-    <tr><td>controle_nfc</td><td>12</td><td>100</td><td class="r">8,3x</td><td class="cinza">não medido</td></tr>
-    <tr><td>teste_hardware</td><td>23</td><td>112</td><td class="r">4,9x</td><td>51</td></tr>
-  </table>
-  <div style="margin-top:30px;font-size:20px;color:var(--cinza)">Linhas de código, sem brancos e sem comentários · <span style="color:var(--branco)">50 testes passando</span></div>
-  <div class="rodape"><span>Tupã · banca</span><span>09</span></div>
-  <template class="notas"><b>Felipe · 0:50.</b> Contamos linhas de código, sem linhas em branco nem comentários. Controle_nfc tem 12 linhas em Tupã e gera 100 de C++, razão 8,3. Teste_hardware tem 23 e gera 112, razão 4,9. O equivalente escrito à mão tem 51 linhas. O gerado é maior que o manual porque inclui debounce, checagem do RC522, lista de UIDs e logs em português. A razão conta quanto o estudante deixa de escrever, não quanto o código é enxuto. A suíte tem 50 testes automatizados passando.</template>
-</section>
-
-<!-- 10 PLAYGROUND -->
-<section class="slide" data-n="10">
-  <div class="kicker">Playground</div>
-  <h2>No ar, sem instalar nada.</h2>
-  <div class="grid" style="grid-template-columns:1fr 250px;gap:34px;margin-top:22px;align-items:start">
-    <div class="painel" style="border-color:#3A424E"><img src="{{PLAY}}" alt="Screenshot do playground" style="display:block;width:100%"></div>
-    <div style="text-align:center">
-      <div style="background:var(--branco);border-radius:12px;padding:12px;width:250px;height:250px"><div style="width:100%;height:100%">{{QR}}</div></div>
-      <div style="font-family:var(--mono);font-size:17px;color:var(--verde);margin-top:14px">tupa.mlutegar.com</div>
-    </div>
-  </div>
-  <div class="rodape"><span>Tupã · banca</span><span>10</span></div>
-  <template class="notas"><b>Guilherme · 0:45.</b> O compilador roda em um site: FastAPI no servidor, React e CodeMirror no navegador. Há abas de tokens, AST, erros, C++ e métricas, e também uma aba Como gravar com a pinagem. O erro é clicável e leva à linha. Dá para copiar ou baixar o .ino. O QR code leva ao endereço, e a banca pode testar do celular. O código é aberto, licença MIT.</template>
-</section>
-
-<!-- 11 HARDWARE / DEMO -->
-<section class="slide" data-n="11">
-  <div class="kicker">Hardware e demo ao vivo</div>
-  <h2>Do site à <em>placa</em>.</h2>
-  <div class="grid" style="grid-template-columns:560px 1fr;gap:34px;margin-top:40px;align-items:start">
-    <div class="painel" style="background:#000"><img src="{{PROTO}}" alt="Protótipo montado" style="display:block;width:100%"></div>
-    <div style="padding-top:6px">
-      <div class="passo"><i>1</i>Compilar no site</div>
-      <div class="passo"><i>2</i>Baixar o .ino</div>
-      <div class="passo"><i>3</i>Gravar na placa</div>
-      <div class="passo"><i>4</i>Passar o cartão:</div>
-      <div style="margin-left:48px">
-        <div class="chip v">33 7A 87 F7 · liberado · LED verde</div><br>
-        <div class="chip" style="border-color:var(--verm);color:var(--verm)">33 8F BD F7 · negado · LED vermelho</div><br>
-        <div class="chip">sem cartão · negado após 3 s</div>
-      </div>
-      <div style="margin-top:20px;font-size:16px;color:var(--cinza);position:absolute;left:72px;top:540px;width:560px">ESP32-WROVER-DEV · RC522 · sensor IR · botão · 2 LEDs · ≈ R$ 120</div>
-    </div>
-  </div>
-  <div class="rodape"><span>Tupã · banca</span><span>11</span></div>
-  <template class="notas"><b>Guilherme · demo 3 a 4 min.</b> Roteiro: abrir tupa.mlutegar.com, escolher controle_nfc, Ctrl+Enter, mostrar a aba C++, baixar o .ino. Abrir na Arduino IDE (placa ESP32 Wrover Module, 115200), gravar. No Monitor Serial aparece a checagem do RC522. Apertar o botão e passar primeiro o cartão 33 7A 87 F7: LED verde, "acesso liberado". Apertar de novo com o cartão 33 8F BD F7: LED vermelho, "acesso negado". Apertar sem cartão: depois de 3 s, "nenhum detectado" e negado. Hardware: ESP32-WROVER-DEV, RC522, sensor IR de obstáculo, botão, dois LEDs, cerca de R$ 120.
-<b>Plano B:</b> se a gravação falhar, ter a placa já gravada com o .ino gerado; se a placa falhar, passar o vídeo tutorial e mostrar a compilação ao vivo no playground (aba C++ e aba Como gravar).
-% TODO (placa): o .ino gerado pelo compilador ainda pode não ter sido gravado na placa. Gravar e testar os três casos antes da banca; se não der, avisar que a demo da placa usa o teste_hardware.ino manual validado em 26/10/2026.</template>
-</section>
-
-<!-- 12 CONCLUSAO -->
-<section class="slide" data-n="12">
-  <div class="kicker">Conclusão</div>
-  <h2>Entregue, no ar e <em>aberto</em>.</h2>
-  <div class="grid" style="grid-template-columns:1fr 1fr;gap:40px;margin-top:34px">
-    <div>
-      <div class="cinza" style="font-size:15px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px">Próximos passos</div>
-      <span class="chip o">OTA</span><span class="chip o">IR TX</span><span class="chip o">testes com estudantes</span>
-    </div>
-    <div>
-      <div class="cinza" style="font-size:15px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px">Código</div>
-      <span class="chip v">Licença MIT</span><span class="chip">tupa.mlutegar.com</span>
-    </div>
-  </div>
-  <div style="position:absolute;left:72px;bottom:110px;font-size:48px;font-weight:800;color:var(--branco)">Perguntas? <span class="laranja">A placa está aqui do lado.</span></div>
-  <div class="rodape"><span>Tupã · banca</span><span>12</span></div>
-  <template class="notas"><b>Michel · 0:45.</b> Resumindo: uma linguagem com 44 tokens, lexer por regex mestre, parser descendente recursivo, AST com 17 tipos de nó, erros semânticos didáticos, gerador para ESP32, 50 testes, site no ar e protótipo de cerca de R$ 120. Próximos passos: atualização OTA, IR transmissor com hardware novo, e testes com estudantes para medir se a barreira realmente cai. Tudo sob licença MIT. Obrigado. Perguntas? A placa está aqui do lado.</template>
-</section>
-
+<div id="dica">setas navegam · N notas · F tela cheia</div>
+{{SLIDES}}
 <div id="notas"></div>
 </div>
-
 <script>
-const KW = new Set("dispositivo ao se senao repetir inteiro decimal texto booleano verdadeiro falso retornar esperar escrever".split(" "));
+const KW = new Set({{KW}});
 const TIPOS = new Set("inteiro decimal texto booleano".split(" "));
 const HW = new Set("nfc ir led botao".split(" "));
 const EVT = new Set("iniciar obstaculo cartao".split(" "));
-const CPPK = new Set("void int bool byte if else for while return const struct unsigned long String char define include".split(" "));
+const CPPK = new Set("void int bool byte if else for while return const struct unsigned long String char define include true false".split(" "));
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
 function hlTupa(src){
@@ -417,8 +95,8 @@ function hlTupa(src){
     else if(m[4]){
       const w = m[4];
       if(TIPOS.has(w)) out += `<span class="t">${w}</span>`;
-      else if(KW.has(w)) out += `<span class="k">${w}</span>`;
       else if(HW.has(w)) out += `<span class="h">${w}</span>`;
+      else if(KW.has(w)) out += `<span class="k">${w}</span>`;
       else if(EVT.has(w) && prev === "ao") out += `<span class="k">${w}</span>`;
       else out += w;
       prev = w;
@@ -442,14 +120,14 @@ function hlEbnf(src){
   return esc(src).replace(/(&quot;|")([^"\n]*?)"/g, '<span class="s">"$2"</span>')
     .replace(/(::=|\||\*|\?)/g, '<span class="k">$1</span>');
 }
+function hlJson(src){
+  return esc(src).replace(/"([^"]*)"(\s*:)/g,'<span class="h">"$1"</span>$2')
+    .replace(/: ("[^"]*")/g,': <span class="s">$1</span>').replace(/\b([0-9]+)\b/g,'<span class="n">$1</span>');
+}
 document.querySelectorAll("pre.tupa").forEach(p => p.innerHTML = hlTupa(p.textContent));
-document.querySelectorAll("pre.cpp").forEach(p => p.innerHTML = hlCpp(p.textContent));
-document.querySelectorAll("pre.py").forEach(p => p.innerHTML = hlCpp(p.textContent).replace(/\bre\.compile\b/,'<span class="h">re.compile</span>'));
+document.querySelectorAll("pre.cpp,pre.py").forEach(p => p.innerHTML = hlCpp(p.textContent));
 document.querySelectorAll("pre.ebnf").forEach(p => p.innerHTML = hlEbnf(p.textContent));
-document.querySelectorAll("pre:not(.tupa):not(.cpp):not(.py):not(.ebnf)").forEach(p => {
-  if(p.closest(".term")) return;
-  p.innerHTML = hlCpp(p.textContent);
-});
+document.querySelectorAll("pre.json").forEach(p => p.innerHTML = hlJson(p.textContent));
 
 const slides = [...document.querySelectorAll(".slide")];
 const notasEl = document.getElementById("notas");
@@ -462,24 +140,23 @@ function mostrar(i){
   notasEl.innerHTML = t ? t.innerHTML : "";
   history.replaceState(null, "", "#" + (atual+1));
 }
-function escala(){
+function ajustar(){
   const k = Math.min(innerWidth/1280, innerHeight/720);
-  stage.style.transform = `scale(${k}) translate(-50%,-50%)`;
-  stage.style.transformOrigin = "0 0";
-  stage.style.left = "50%"; stage.style.top = "50%";
-  stage.style.marginLeft = "0";
-  stage.style.transform = `translate(${-640*k}px,${-360*k}px) scale(${k})`;
+  stage.style.transform = `scale(${k})`;
+  stage.style.left = (innerWidth - 1280*k)/2 + "px";
+  stage.style.top = (innerHeight - 720*k)/2 + "px";
 }
-addEventListener("resize", escala);
+addEventListener("resize", ajustar);
 addEventListener("keydown", e => {
-  if(["ArrowRight","PageDown"," ","Enter"].includes(e.key)){ e.preventDefault(); mostrar(atual+1); }
-  else if(["ArrowLeft","PageUp","Backspace"].includes(e.key)){ e.preventDefault(); mostrar(atual-1); }
+  if(["ArrowRight","PageDown"," "].includes(e.key)) { mostrar(atual+1); e.preventDefault(); }
+  else if(["ArrowLeft","PageUp"].includes(e.key)) { mostrar(atual-1); e.preventDefault(); }
   else if(e.key === "Home") mostrar(0);
   else if(e.key === "End") mostrar(slides.length-1);
   else if(e.key === "n" || e.key === "N") notasEl.classList.toggle("on");
+  else if(e.key === "f" || e.key === "F") { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
 });
 addEventListener("click", e => { if(e.clientX > innerWidth/2) mostrar(atual+1); else mostrar(atual-1); });
-escala();
+ajustar();
 mostrar((parseInt(location.hash.slice(1)) || 1) - 1);
 </script>
 </body>
