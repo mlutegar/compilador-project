@@ -16,3 +16,7 @@ Diário de decisões e mudanças.
 - Decisões: lista de UIDs fica no arquivo da placa (nenhum token/regra extra); `cartao.id` virou `cartao.uid`; `ir.enviar/receber` removidos, entra `ir.detectado()` (sensor de obstáculo, sem TX).
 - Diferença conhecida: o manual acende o LED vermelho enquanto o botão está apertado; o Tupã acende por 300 ms a cada aperto (LED apaga ao fim do evento).
 - Validação: os 3 sketches compilam com `arduino-cli` (core esp32 3.3.12, MFRC522 1.4.12); 50 testes passando. Falta testar na placa.
+
+## 2026-11-08: P07, artigo atualizado
+- `artigo/main.tex`: figura do protótipo (prototipo.jpg, 3 painéis), pinagem da placa ESP32-WROVER, EBNF e tokens com `escrever` e eventos novos (44 tokens com EOF), tabela com controle_nfc e teste_hardware (Tupã, gerado, manual), razões 8,3 e 4,9, 50 testes. 5 páginas, latexmk sem erros.
+- Pendente: gravar o .ino gerado na placa; TODOs de e-mails e nome do professor.

@@ -21,7 +21,7 @@
 % ---------------------------------------------------------------
 \lstdefinelanguage{Tupa}{
   morekeywords={dispositivo,ao,se,senao,inteiro,verdadeiro,falso,botao},
-  morekeywords=[2]{nfc,led,ir,esperar},
+  morekeywords=[2]{nfc,led,ir,esperar,escrever},
   sensitive=true,
   morecomment=[l]{\#},
   morestring=[b]",
@@ -98,11 +98,14 @@ semântica e geração de código, e produz um programa Arduino em C++ destinado
 placa pela Arduino CLI, etapa que ainda é manual. A análise semântica
 verifica o uso correto dos módulos de hardware antes da gravação e emite
 mensagens de erro didáticas em português. Em um exemplo de controle de acesso
-por cartão NFC, um programa de 12 linhas de código em Tupã gera 50 linhas de
-código C++, cerca de 4,2 vezes mais, sem que o usuário precise escrever inclusões de bibliotecas,
-definições de pinos ou as funções de configuração e laço principal. O projeto
-encontra-se em desenvolvimento, com as quatro fases do compilador
-implementadas e a integração com o hardware em andamento.
+por cartão NFC, um programa de 12 linhas de código em Tupã gera 100 linhas de
+código C++, cerca de 8,3 vezes mais, sem que o usuário precise escrever inclusões de bibliotecas,
+definições de pinos ou as funções de configuração e laço principal. Os
+programas gerados compilam com a Arduino CLI, e um teste de bancada com
+firmware escrito à mão validou o protótipo com ESP32-WROVER, leitor RC522 e
+sensor infravermelho de obstáculo. O projeto encontra-se em desenvolvimento,
+com as quatro fases do compilador implementadas e a gravação do código gerado
+na placa ainda pendente.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -220,11 +223,14 @@ pela palavra-chave \texttt{ao}. Dentro de um tratador, o usuário utiliza
 estruturas de controle e chamadas a métodos dos módulos de hardware.
 
 \subsection{Léxico}
-O vocabulário da linguagem é composto por 43 tipos de \textit{token}: 42
+O vocabulário da linguagem é composto por 44 tipos de \textit{token}: 43
 enviados ao analisador sintático mais o marcador sintético de fim de entrada
 (\texttt{TK\_EOF}). Espaços e comentários de linha, iniciados por
 \texttt{\#}, são reconhecidos e descartados, e por isso não entram na
-contagem. A Tabela~\ref{tab:tokens} apresenta a distribuição por categoria.
+contagem. Os nomes de evento \texttt{iniciar}, \texttt{obstaculo} e
+\texttt{cartao} não são \textit{tokens} próprios: chegam como identificadores
+e são conferidos na análise semântica, o que mantém \texttt{cartao} livre como
+nome de variável. A Tabela~\ref{tab:tokens} apresenta a distribuição por categoria.
 
 \begin{table}[htbp]
 \caption{Contagem de \textit{tokens} da linguagem Tupã por categoria}
@@ -234,16 +240,16 @@ contagem. A Tabela~\ref{tab:tokens} apresenta a distribuição por categoria.
 \textbf{Categoria} & \textbf{Qtde} & \textbf{Exemplos} \\
 \midrule
 Palavras reservadas & 12 & \texttt{dispositivo}, \texttt{ao}, \texttt{se}, \texttt{senao}, \texttt{repetir}, \texttt{inteiro} \\
-Hardware e comandos & 5  & \texttt{nfc}, \texttt{ir}, \texttt{led}, \texttt{botao}, \texttt{esperar} \\
+Hardware e comandos & 6  & \texttt{nfc}, \texttt{ir}, \texttt{led}, \texttt{botao}, \texttt{esperar}, \texttt{escrever} \\
 Identificador       & 1  & \texttt{cartao} \\
 Literais            & 3  & inteiro, decimal, texto \\
 Operadores          & 14 & \texttt{==}, \texttt{=}, \texttt{\&\&}, \texttt{+} \\
 Delimitadores       & 7  & \texttt{\{ \}}, \texttt{( )}, \texttt{;}, \texttt{.} \\
 \midrule
-Enviados ao parser  & 42 & \\
+Enviados ao parser  & 43 & \\
 Fim de entrada      & 1  & \texttt{TK\_EOF} \\
 \midrule
-\textbf{Total}      & \textbf{43} & \\
+\textbf{Total}      & \textbf{44} & \\
 \bottomrule
 \end{tabular}
 \label{tab:tokens}
@@ -252,7 +258,11 @@ Fim de entrada      & 1  & \texttt{TK\_EOF} \\
 
 \subsection{Gramática}
 A Fig.~\ref{fig:gramatica} apresenta a gramática, em notação EBNF, que o
-analisador sintático efetivamente aceita. As regras de expressão estão
+analisador sintático efetivamente aceita. Além de \texttt{ao botao(N)}, há os
+eventos \texttt{ao iniciar} (uma vez, na partida), \texttt{ao obstaculo}
+(mudança do sensor infravermelho) e \texttt{ao cartao} (cartão novo lido, com
+\texttt{cartao.uid} e \texttt{cartao.valido}), e o comando \texttt{escrever},
+que envia um valor ao Monitor Serial. As regras de expressão estão
 agrupadas por nível de precedência, da menor para a maior.
 
 \begin{figure}[htbp]
@@ -261,14 +271,17 @@ agrupadas por nível de precedência, da menor para a maior.
 programa  ::= "dispositivo" ID "{" item* "}" EOF
 item      ::= evento | comando
 evento    ::= "ao" "botao" "(" INT ")" bloco
+            | "ao" nome_evento bloco
+nome_evento ::= "iniciar" | "obstaculo" | "cartao"
 bloco     ::= "{" comando* "}"
 comando   ::= decl_var | se | repetir | esperar
-            | retornar | atrib_ou_chamada
+            | escrever | retornar | atrib_ou_chamada
 decl_var  ::= tipo ID ("=" expr)? ";"
 tipo      ::= "inteiro" | "decimal" | "texto" | "booleano"
 se        ::= "se" expr bloco ("senao" bloco)?
 repetir   ::= "repetir" "(" expr ")" bloco
 esperar   ::= "esperar" "(" expr ")" ";"
+escrever  ::= "escrever" "(" expr ")" ";"
 retornar  ::= "retornar" expr? ";"
 atrib_ou_chamada ::= expr ("=" expr)? ";"
 expr      ::= e ("||" e)*
@@ -344,10 +357,10 @@ preditiva, com um \textit{token} de antecipação e sem retrocesso: cada
 não-terminal da Fig.~\ref{fig:gramatica} é um método do analisador. A
 precedência das expressões é obtida por uma cadeia de métodos, um por nível,
 com laços que produzem associatividade à esquerda. O primeiro erro sintático
-interrompe a compilação, sem recuperação. A AST possui 16 tipos de nó, todos
+interrompe a compilação, sem recuperação. A AST possui 17 tipos de nó, todos
 com linha e coluna: \texttt{Programa}, \texttt{DeclVar}, \texttt{Evento},
 \texttt{Atribuicao}, \texttt{Se}, \texttt{Repetir}, \texttt{Esperar},
-\texttt{Retornar}, \texttt{ExprComando}, \texttt{Binaria},
+\texttt{Escrever}, \texttt{Retornar}, \texttt{ExprComando}, \texttt{Binaria},
 \texttt{Unaria}, \texttt{Literal}, \texttt{Identificador},
 \texttt{Hardware}, \texttt{AcessoMembro} e \texttt{Chamada}.
 
@@ -382,17 +395,24 @@ O gerador percorre a AST validada e emite um programa Arduino completo: as
 inclusões de bibliotecas necessárias, como a MFRC522 para o leitor NFC
 \cite{mfrc522}; as definições de pinos; a inicialização dos periféricos em
 \texttt{setup()}; e a tradução dos tratadores de evento para verificações
-dentro de \texttt{loop()}. Apenas as bibliotecas e os pinos
-do leitor NFC e do infravermelho são emitidos quando o programa usa esses
-módulos. Na versão atual, o mapeamento de pinos é fixo no gerador: LEDs verde
-e vermelho nos GPIO 16 e 17, botão 1 no GPIO 4 com resistor de
-\textit{pull-up} interno, e leitor NFC com SS no GPIO 5 e RST no GPIO 22. O
-\textit{debounce} é um atraso fixo de 30~ms na borda de descida do botão. A
-leitura NFC tenta uma única vez, sem \textit{timeout} de espera, e a validação
-compara o UID lido com uma constante embutida de um único cartão, que é um
-valor provisório.
-% TODO (P03, nao implementado no repositorio): pinagem configuravel por arquivo de placa, debounce configuravel, timeout do NFC e lista de UIDs autorizados. Reescrever este paragrafo quando o P03 estiver no codigo.
-% TODO (so o Joao): a pinagem acima nao foi verificada contra a protoboard.
+dentro de \texttt{loop()}. Bibliotecas e pinos só são emitidos quando o
+programa usa o módulo correspondente. A pinagem não está mais fixa no
+gerador: vem de um arquivo de placa em JSON
+(\texttt{compilador/placas/esp32\_wrover.json}, escolhido pela opção
+\texttt{--placa}), que traz também o FQBN da Arduino CLI e a lista de UIDs
+autorizados. Para a ESP32-WROVER-DEV, os LEDs verde e vermelho ficam nos GPIO
+25 e 26, o botão 1 no GPIO 4 com \textit{pull-up} interno, o sensor
+infravermelho no GPIO 34 e o leitor NFC com SS no GPIO 5 e RST no GPIO 22, valores
+conferidos em bancada. O \textit{debounce} usa \texttt{millis()}, sem
+\texttt{delay()}, com janela de 50~ms e ação na borda. A chamada
+\texttt{nfc.ler()} espera até 3~s por um cartão e, sem cartão, devolve um
+resultado inválido; ao fim da leitura o cartão é encerrado com
+\texttt{PICC\_HaltA} e \texttt{PCD\_StopCrypto1}. A validação compara o UID
+lido com a lista de UIDs autorizados da placa. Em \texttt{setup()}, o código
+verifica o registrador de versão do RC522 e avisa pelo Serial se o leitor não
+responde. O compilador grava o resultado em \texttt{<pasta>/<pasta>.ino},
+formato exigido pela Arduino CLI, e inclui no cabeçalho a origem
+\texttt{.tupa} e a ligação entre blocos e linhas do fonte.
 
 \subsection{Ambiente Web}
 O projeto inclui um \textit{playground} que expõe o compilador no navegador.
@@ -404,57 +424,85 @@ estático em React com editor CodeMirror, servido pelo próprio serviço. Como o
 compilador, o ambiente apenas gera o \texttt{.ino}.
 
 \subsection{Plataforma de Hardware}
-O protótipo utiliza uma placa ESP32 DevKit v1 \cite{esp32}, um leitor
-NFC/RFID MFRC522, emissor e receptor infravermelho, LEDs e botões. O custo
+O protótipo utiliza uma placa ESP32-WROVER-DEV \cite{esp32}, um leitor
+NFC/RFID RC522, controlado pela biblioteca MFRC522 \cite{mfrc522}, um sensor
+infravermelho de obstáculo, dois LEDs e um botão. A pinagem usada pelo
+compilador é a do arquivo de placa \texttt{esp32\_wrover.json}: LEDs nos GPIO
+25 e 26, botão no GPIO 4, sensor infravermelho no GPIO 34 e RC522 em SPI com
+SS no GPIO 5 e RST no GPIO 22. O custo
 estimado do hardware é de aproximadamente R\$~120, e todo o software
 utilizado é de código aberto.
 
 % ===============================================================
 \section{Resultados Preliminares}\label{sec:resultados}
 % ===============================================================
-As quatro fases do compilador estão implementadas, e um conjunto de 17
-testes automatizados, 11 do compilador e 6 da API do ambiente web, é executado
-com sucesso. O exemplo canônico da Listagem~\ref{lst:controle} é traduzido
-de ponta a ponta até um arquivo \texttt{.ino}. Esse arquivo ainda
-\emph{não} foi compilado com a Arduino CLI, que não estava instalada no
-ambiente de desenvolvimento, e portanto sua validade para o ESP32 não está
-comprovada.
+As quatro fases do compilador estão implementadas, e um conjunto de 50
+testes automatizados, 41 do compilador e 9 da API do ambiente web, é executado
+com sucesso. Dois programas são traduzidos de ponta a ponta até um arquivo
+\texttt{.ino}: o exemplo canônico da Listagem~\ref{lst:controle}
+(\texttt{controle\_nfc.tupa}) e o teste de hardware em Tupã
+(\texttt{teste\_hardware.tupa}), que usa os eventos novos e \texttt{escrever}.
+Os dois arquivos gerados e o \texttt{teste\_hardware.ino} escrito à mão
+compilam sem erro com a Arduino CLI para a placa ESP32 Wrover Module
+(\texttt{esp32:esp32:esp32wrover}).
 
-A Tabela~\ref{tab:comparacao} compara o programa em Tupã com o C++ gerado. O
-código produzido tem cerca de 4,2 vezes mais linhas de código (50 contra 12),
-e nenhuma linha relativa à configuração do hardware precisa ser escrita pelo
-usuário.
+O teste de bancada, de 26/10/2026, foi feito com o firmware escrito à mão
+(\texttt{firmware/teste\_hardware.ino}), e a Fig.~\ref{fig:prototipo} mostra a
+montagem e o Monitor Serial. O teste leu três UIDs distintos
+(\texttt{33 7A 87 F7}, \texttt{43 A3 6F F5} e \texttt{33 8F BD F7}) e registrou
+o botão e o sensor infravermelho. As imagens, portanto, são do firmware
+manual: o código gerado pelo compilador ainda \emph{não} foi gravado nem
+executado na placa.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{prototipo.jpg}
+\caption{Protótipo em funcionamento: (a) montagem em protoboard com
+ESP32-WROVER, leitor RC522, sensor IR de obstáculo, botão e LEDs; (b) leitura
+de uma tag RFID; (c) Monitor Serial registrando eventos do sensor IR, do botão
+e os UIDs lidos.}
+\label{fig:prototipo}
+\end{figure}
+
+A Tabela~\ref{tab:comparacao} compara os programas em Tupã com o C++ gerado e,
+para o teste de hardware, com o C++ que seria escrito à mão
+(\texttt{teste\_hardware.ino}, a referência). O controle de acesso passou de 12
+para 100 linhas de código, cerca de 8,3 vezes mais, e o teste de hardware de 23
+para 112, cerca de 4,9 vezes. O gerado tem cerca de 2,2 vezes as linhas do
+manual (112 contra 51), porque inclui \textit{debounce} por \texttt{millis()}
+com detecção de borda, espera de 3~s no NFC, encerramento do cartão, conferência
+da lista de UIDs e funções auxiliares de LED, que o firmware manual não tem.
+Nenhuma linha de configuração do hardware precisa ser escrita pelo usuário.
 
 \begin{table}[htbp]
-\caption{Tupã versus C++ gerado para o controle de acesso NFC}
+\caption{Tupã versus C++ gerado e C++ manual}
 \begin{center}
-\begin{tabular}{lcc}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Métrica} & \textbf{Tupã} & \textbf{C++ gerado} \\
+ & \multicolumn{2}{c}{\textbf{controle\_nfc}} & \multicolumn{3}{c}{\textbf{teste\_hardware}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+\textbf{Métrica} & \textbf{Tupã} & \textbf{Gerado} & \textbf{Tupã} & \textbf{Gerado} & \textbf{Manual} \\
 \midrule
-Linhas totais                & 17 & 64 \\
-Linhas de código             & 12 & 50 \\
-Inclusões de bibliotecas     & 0  & 3 \\
-Definições de pinos          & 0  & 5 \\
-\texttt{setup()} / \texttt{loop()} & 0 & 2 \\
+Linhas totais             & 17 & 126 & 33 & 139 & 67 \\
+Linhas de código          & 12 & 100 & 23 & 112 & 51 \\
+Inclusões de bibliotecas  & 0  & 2   & 0  & 2   & 2  \\
+Constantes (\texttt{\#define}) & 0 & 7 & 0 & 7 & 6 \\
+Razão C++/Tupã            & \multicolumn{2}{c}{8,3} & \multicolumn{3}{c}{4,9} \\
 \bottomrule
 \end{tabular}
 \label{tab:comparacao}
 \end{center}
 \end{table}
 
-Linhas de código excluem linhas vazias e comentários. As inclusões são
-\texttt{Arduino.h}, \texttt{SPI.h} e \texttt{MFRC522.h}, e as definições de
-pinos são \texttt{LED\_VERDE}, \texttt{LED\_VERMELHO}, \texttt{BOTAO\_1},
-\texttt{NFC\_SS} e \texttt{NFC\_RST}.
+Linhas de código excluem linhas vazias e comentários. As duas inclusões são
+\texttt{SPI.h} e \texttt{MFRC522.h}. Nos arquivos gerados, as sete constantes
+são os pinos (cinco no \texttt{controle\_nfc}, seis no \texttt{teste\_hardware}),
+a janela de \textit{debounce} e, no \texttt{controle\_nfc}, o \textit{timeout} do NFC. No manual, as seis constantes são pinos. Há uma diferença
+conhecida de comportamento: o firmware manual mantém o LED vermelho aceso
+enquanto o botão está apertado, e o programa em Tupã o acende por 300~ms a cada
+aperto.
 
-% TODO: foto do protótipo funcionando (artigo/figuras/prototipo.jpg), descomentar quando o arquivo existir:
-% \begin{figure}[htbp]
-% \centering
-% \includegraphics[width=\columnwidth]{prototipo.jpg}
-% \caption{Protótipo do controle de acesso NFC com ESP32.}
-% \label{fig:prototipo}
-% \end{figure}
 % TODO: tempo de compilação e de gravação na placa (medir com arduino-cli).
 % TODO: testes com usuários, se houver.
 
@@ -467,11 +515,18 @@ que percorre as quatro fases clássicas de compilação e gera C++ compatível
 com o ecossistema Arduino. Os resultados preliminares indicam que a
 linguagem reduz significativamente a quantidade de código que o usuário
 precisa escrever e elimina a configuração manual do hardware, enquanto a
-análise semântica orientada a módulos detecta erros antes da gravação.
+análise semântica orientada a módulos detecta erros antes da gravação. O
+protótipo com ESP32-WROVER, RC522, sensor infravermelho de obstáculo, botão e
+LEDs foi validado em bancada com um firmware escrito à mão, e os programas
+gerados compilam com a Arduino CLI para a placa-alvo. Falta, porém, gravar o
+\texttt{.ino} gerado na placa e repetir o teste de bancada com ele, de modo que
+o funcionamento do código gerado no hardware ainda não foi verificado.
 
-Os próximos passos incluem: concluir a integração com o ESP32, automatizando
-a compilação e a gravação a partir do comando \texttt{tupa build}; ampliar os
-módulos suportados, em especial infravermelho; documentar a linguagem e o
+Os próximos passos incluem: gravar na placa o código gerado por
+\texttt{controle\_nfc.tupa} e \texttt{teste\_hardware.tupa} e comparar seu
+comportamento com o do firmware manual; automatizar a compilação e a gravação a
+partir do comando \texttt{tupa build}; ampliar os módulos suportados, como o
+envio de infravermelho, hoje fora do escopo; documentar a linguagem e o
 compilador no repositório Git; e, fora do escopo do MVP, permitir a
 atualização do firmware por Wi-Fi (OTA). Também se pretende avaliar o uso da
 linguagem em contexto de ensino de sistemas embarcados.
