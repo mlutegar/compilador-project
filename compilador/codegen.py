@@ -1,13 +1,15 @@
 """Geração de código: AST do Tupã -> C++/Arduino (.ino) para ESP32."""
 
 from . import ast_nodes as A
+from .placa import carregar_placa
 
 CTIPO = {"inteiro": "int", "decimal": "float", "texto": "String", "booleano": "bool"}
 
 
 class GeradorC:
-    def __init__(self, programa: A.Programa):
+    def __init__(self, programa: A.Programa, placa=None):
         self.prog = programa
+        self.placa = placa or carregar_placa()
         self.usa_nfc = False
         self.usa_ir = False
         self.declaradas = set()   # variáveis já declaradas no código gerado
@@ -62,23 +64,25 @@ class GeradorC:
         L = [
             f"// controle.ino — gerado automaticamente pelo compilador Tupã",
             f"// Dispositivo: {self.prog.nome}",
-            f"// Alvo: ESP32 DevKit v1",
+            f"// Alvo: {self.placa.descricao or self.placa.nome} ({self.placa.fqbn})",
             "",
             "#include <Arduino.h>",
         ]
         if self.usa_nfc:
             L += ["#include <SPI.h>", "#include <MFRC522.h>"]
+        pinos = self.placa.pinos
         L += [
             "",
-            "// ---- Pinos ----",
-            "#define LED_VERDE     16",
-            "#define LED_VERMELHO  17",
-            "#define BOTAO_1        4",
+            "// ---- Pinos (vem de compilador/placas/%s.json) ----" % self.placa.nome,
+            f"#define LED_VERDE     {pinos['led_verde']}",
+            f"#define LED_VERMELHO  {pinos['led_vermelho']}",
         ]
+        for n, pino in sorted(self.placa.botoes.items()):
+            L.append(f"#define BOTAO_{n}        {pino}")
         if self.usa_nfc:
-            L += ["#define NFC_SS         5", "#define NFC_RST       22"]
+            L += [f"#define NFC_SS         {pinos['nfc_ss']}", f"#define NFC_RST       {pinos['nfc_rst']}"]
         if self.usa_ir:
-            L += ["#define IR_ENVIA      25", "#define IR_RECEBE     26"]
+            L += [f"#define IR_PIN        {pinos['ir']}"]
         L.append("")
 
         if self.usa_nfc:
@@ -119,9 +123,15 @@ class GeradorC:
     def _setup(self, outros):
         L = ["void setup() {", "  Serial.begin(115200);"]
         if self.usa_nfc:
-            L += ["  SPI.begin();", "  leitorNFC.PCD_Init();"]
+            spi = self.placa.spi
+            L += [f"  SPI.begin({spi['sck']}, {spi['miso']}, {spi['mosi']}, {spi['ss']});"
+                  "  // SCK, MISO, MOSI, SS",
+                  "  leitorNFC.PCD_Init();"]
+        for n in sorted(self.placa.botoes):
+            L.append(f"  pinMode(BOTAO_{n}, {self.placa.eletrica['botao']['modo']});")
+        if self.usa_ir:
+            L.append(f"  pinMode(IR_PIN, {self.placa.eletrica['ir']['modo']});")
         L += [
-            "  pinMode(BOTAO_1, INPUT_PULLUP);",
             "  pinMode(LED_VERDE, OUTPUT);",
             "  pinMode(LED_VERMELHO, OUTPUT);",
             "  ledApagar();",
@@ -256,5 +266,5 @@ class GeradorC:
         return "auto"
 
 
-def gerar_ino(programa):
-    return GeradorC(programa).gerar()
+def gerar_ino(programa, placa=None):
+    return GeradorC(programa, placa).gerar()

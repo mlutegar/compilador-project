@@ -17,6 +17,10 @@ tupa = "compilador.cli:main"
 
 [tool.setuptools]
 packages = ["compilador"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+compilador = ["placas/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

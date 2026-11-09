@@ -16,6 +16,7 @@ from .semantic import analisar
 from .codegen import gerar_ino
 from .astprint import render_programa
 from .errors import TupaError
+from .placa import carregar_placa, ErroPlaca, PLACA_PADRAO
 
 
 def _ler(caminho):
@@ -24,11 +25,12 @@ def _ler(caminho):
 
 
 def _cmd_build(args):
+    placa = carregar_placa(args.placa)
     codigo = _ler(args.arquivo)
     tokens = tokenizar(codigo)
     ast = parsear(tokens)
     analisar(ast)
-    ino = gerar_ino(ast)
+    ino = gerar_ino(ast, placa)
 
     if args.saida:
         destino = args.saida
@@ -65,6 +67,8 @@ def build_parser():
     b = sub.add_parser("build", help="compila .tupa para .ino")
     b.add_argument("arquivo")
     b.add_argument("-o", "--saida", help="arquivo .ino de saída")
+    b.add_argument("--placa", default=PLACA_PADRAO,
+                   help="placa-alvo: nome em compilador/placas/ ou caminho de um .json (padrão: %(default)s)")
     b.set_defaults(func=_cmd_build)
 
     t = sub.add_parser("tokens", help="mostra a análise léxica (tokens)")
@@ -91,6 +95,9 @@ def main(argv=None):
         print(f"\n{e}\n", file=sys.stderr)
         print("compilacao interrompida: 1 erro", file=sys.stderr)
         return 1
+    except ErroPlaca as e:
+        print(f"erro de placa: {e}", file=sys.stderr)
+        return 2
     except FileNotFoundError:
         print(f"arquivo não encontrado: {args.arquivo}", file=sys.stderr)
         return 2

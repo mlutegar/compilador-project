@@ -6,7 +6,7 @@ from .semantic import analisar
 from .codegen import gerar_ino
 
 
-def compilar(codigo):
+def compilar(codigo, placa=None):
     """Retorna o código C++/Arduino (.ino) a partir do fonte Tupã.
 
     Lança TupaError (ErroLexico/ErroSintatico/ErroSemantico) em caso de falha.
@@ -14,10 +14,10 @@ def compilar(codigo):
     tokens = tokenizar(codigo)
     ast = parsear(tokens)
     analisar(ast)
-    return gerar_ino(ast)
+    return gerar_ino(ast, placa)
 
 
-def compilar_arquivo(caminho_entrada):
+def compilar_arquivo(caminho_entrada, placa=None):
     with open(caminho_entrada, "r", encoding="utf-8") as f:
         codigo = f.read()
-    return compilar(codigo)
+    return compilar(codigo, placa)

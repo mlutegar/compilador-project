@@ -1,0 +1,23 @@
+{
+  "nome": "esp32_wrover",
+  "descricao": "ESP32-WROVER-DEV (conferido em bancada em 26/10/2026)",
+  "fqbn": "esp32:esp32:esp32wrover",
+  "biblioteca_nfc": "MFRC522",
+  "pinos": {
+    "nfc_ss": 5,
+    "nfc_rst": 22,
+    "led_verde": 25,
+    "led_vermelho": 26,
+    "ir": 34,
+    "botoes": { "1": 4 }
+  },
+  "spi": { "sck": 18, "miso": 19, "mosi": 23, "ss": 5 },
+  "eletrica": {
+    "botao": { "modo": "INPUT_PULLUP", "ativo_em": "LOW" },
+    "ir": { "modo": "INPUT", "ativo_em": "LOW" }
+  },
+  "nfc": {
+    "timeout_ms": 3000,
+    "uids_autorizados": ["33 7A 87 F7", "43 A3 6F F5"]
+  }
+}
